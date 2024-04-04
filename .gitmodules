@@ -1,0 +1,16 @@
+[submodule "pkg/metamod"]
+	path = pkg/metamod
+	url = https://github.com/alliedmodders/metamod-source.git
+[submodule "pkg/sdk"]
+	path = pkg/sdk
+	url = https://github.com/alliedmodders/hl2sdk.git
+	branch = cs2
+[submodule "pkg/amtl"]
+	path = pkg/amtl
+	url = https://github.com/alliedmodders/amtl.git
+[submodule "pkg/uv"]
+	path = pkg/uv
+	url = https://github.com/libuv/libuv.git
+[submodule "pkg/luau"]
+	path = pkg/luau
+	url = https://github.com/luau-lang/luau/
