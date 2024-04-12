@@ -1,0 +1,38 @@
+// Copyright (c) 2024 Mooshua. All rights reserved.
+
+#ifndef DUOSCRIPT_ASYNCHANDLE_H
+#define DUOSCRIPT_ASYNCHANDLE_H
+
+
+#include "ILoop.h"
+#include "uv.h"
+#include "Loop.h"
+
+class AsyncHandle : public virtual IAsyncHandle
+{
+public:
+	AsyncHandle(ILoop::Async handle, Loop* loop);
+	~AsyncHandle() override;
+
+	///	Attempt to invoke the callback associated with this async handle.
+	///	Returns true when the handle is still alive.
+	///	Returns false when the handle has been killed or already invoked.
+	bool TryInvoke() override;
+
+	///	Kill this handle to prevent it from being used.
+	///	This causes all future calls to TryInvoke() to return false.
+	void Kill() override;
+
+	static void OnAsync(uv_async_t *handle);
+
+protected:
+	bool _invoked;
+	bool _killed;
+	uv_async_t *_handle;
+
+	Loop *_parent;
+	ILoop::Async _callback;
+};
+
+
+#endif //DUOSCRIPT_ASYNCHANDLE_H

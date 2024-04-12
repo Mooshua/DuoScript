@@ -54,7 +54,8 @@ public:
 	int returnc;
 
 public:
-	virtual IScriptIsolate *GetIsolate();
+	virtual IIsolateHandle *GetIsolate();
+	virtual IFiberHandle *GetFiber();
 
 	///	Get the first argument (aka "self")
 	void* GetOpaqueSelf() override;
@@ -72,6 +73,10 @@ public:
 	bool ArgInt(int slot, int* result) override;
 	bool ArgUnsigned(int slot, unsigned* result) override;
 
+	bool ArgMethod(int slot, IScriptMethod** result) override;
+	bool ArgTable(int slot, IScriptObject** result) override;
+	bool ArgBuffer(int slot, void** result, size_t* size) override;
+
 	void PushBool(bool value) override;
 	void PushString(const char* value, int length) override;
 	void PushObject(IScriptRef* value) override;
@@ -79,12 +84,16 @@ public:
 	void PushInt(int value) override;
 	void PushUnsigned(unsigned value) override;
 
+	void PushVarArgs(IScriptCall* from, int after) override;
+	void PushArg(IScriptCall *from, int arg) override;
+	void PushBuffer(void* data, size_t length) override;
+
 public:
 	///	Invoke an error in the calling method
-	virtual IScriptResult* Error(const char* error);
+	virtual IScriptResult* Error(const char* error, ...);
 
 	///	Suspend execution
-	virtual IScriptResult* Yield();
+	virtual IScriptResult* Await();
 
 	///	Return without error
 	virtual IScriptResult* Return();

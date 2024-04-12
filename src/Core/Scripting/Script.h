@@ -6,7 +6,7 @@
 #include "lua.h"
 #include "lualib.h"
 
-#include "DuoScript.h"
+#include "DuoMetamod.h"
 
 #include "IScript.h"
 #include "IScriptController.h"
@@ -32,7 +32,7 @@ public:
 	virtual IScriptResult* Error(const char* error) final;
 
 	///	Suspend execution until the provided task returns.
-	virtual IScriptResult* Yield() final;
+	virtual IScriptResult* Await() final;
 protected:
 	lua_State *L;
 	int argc;

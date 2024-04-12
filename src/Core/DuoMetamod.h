@@ -1,25 +1,32 @@
 // Copyright (c) 2024 Mooshua. All rights reserved.
 
-#ifndef DUOSCRIPT_DUOSCRIPT_H
-#define DUOSCRIPT_DUOSCRIPT_H
+#ifndef DUOSCRIPT_DUOMETAMOD_H
+#define DUOSCRIPT_DUOMETAMOD_H
 
 #include <ISmmPlugin.h>
 #include <ISmmAPI.h>
-#include <eiface.h>
 
-#include "Loop.h"
+#include <interfaces/interfaces.h>
+#include <eiface.h>
+#include <filesystem.h>
+
+#include "Core/Loop/Loop.h"
 #include "Script/ScriptVM.h"
 
 #if (_MSC_VER <1300)
 #error "Hey, buddy, it's 2024 pal"
 #endif
 
-PLUGIN_GLOBALVARS()
-
-extern ISource2Engine *g_Engine;
+extern IVEngineServer2 *g_Engine;
 extern ISource2Server *g_Server;
+extern IFileSystem *g_Filesystem;
+extern INetworkServerService *g_NetworkServer;
 
-class DuoScript : public ISmmPlugin, public IMetamodListener
+extern ISmmPluginManager* g_MetamodPluginManager;
+
+PLUGIN_GLOBALVARS();
+
+class DuoMetamod : public ISmmPlugin, public IMetamodListener
 {
 public:
 	bool Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool late) override;
@@ -42,6 +49,6 @@ public:
 	const char *GetLogTag() override { return "DUO"; };
 };
 
-extern DuoScript g_DuoScript;
+extern DuoMetamod g_DuoScript;
 
-#endif //DUOSCRIPT_DUOSCRIPT_H
+#endif //DUOSCRIPT_DUOMETAMOD_H

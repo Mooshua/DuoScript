@@ -54,7 +54,9 @@ bool ScriptCall::TryGetNamecall(char *result, int maxlen)
 			return false;                                \
         slot++; /* Remove self pointer */                  \
 		if (! check ( this->parent->L , slot )) \
-			return false; \
+			return false;                                \
+		if (result == nullptr) 						\
+			return true;                                        \
 		*result = get ( this->parent->L , slot); \
 		return true; \
 	}
@@ -62,7 +64,8 @@ bool ScriptCall::TryGetNamecall(char *result, int maxlen)
 #define CREATE_PUSHER(name, type, push) \
 	void name (type value)                 \
     {                                   \
-    	returnc++;                          \
+		lua_checkstack(this->parent->L, 1); \
+		returnc++;                          \
 		push (this->parent->L, value);\
 	}                                    \
                                         \
@@ -86,8 +89,8 @@ bool ScriptCall::ArgObject(int slot, IScriptRef** result)
 
 	slot++;
 
-	if (!lua_istable( this->parent->L , slot ))
-		return false;
+	if (result == nullptr)
+		return true;
 
 	int ref = lua_ref( this->parent->L , slot);
 	*result = new ScriptRef(this->parent->L, ref);
@@ -97,6 +100,8 @@ bool ScriptCall::ArgObject(int slot, IScriptRef** result)
 
 void ScriptCall::PushObject(IScriptRef *value)
 {
+	lua_checkstack(this->parent->L, 1);
+
 	returnc++;
 	lua_getref(this->parent->L, value->AsReferenceId());
 }
@@ -111,6 +116,9 @@ bool ScriptCall::ArgString(int slot, char* result, int maxlen, int* written)
 	if (!lua_isstring( this->parent->L , slot ))
 		return false;
 
+	if (result == nullptr)
+		return true;
+
 	size_t length;
 	const char* str = lua_tolstring(this->parent->L, slot, &length);
 
@@ -120,12 +128,14 @@ bool ScriptCall::ArgString(int slot, char* result, int maxlen, int* written)
 	if (written != nullptr)
 		*written = std::min( (size_t)maxlen, length);
 
-	strcpy_s(result, std::min( (size_t)maxlen, length), str);
+	strcpy_s(result, maxlen, str);
 	return true;
 }
 
 void ScriptCall::PushString(const char *value, int length)
 {
+	lua_checkstack(this->parent->L, 1);
+
 	if (length == -1)
 		length = strlen(value);
 
@@ -134,21 +144,33 @@ void ScriptCall::PushString(const char *value, int length)
 }
 
 
-IScriptIsolate *ScriptCall::GetIsolate()
+IIsolateHandle *ScriptCall::GetIsolate()
 {
-	return this->parent->parent;
+	return this->parent->parent->ToHandle();
 }
 
-IScriptResult *ScriptCall::Error(const char *error)
+IFiberHandle *ScriptCall::GetFiber()
 {
+	return this->parent->ToHandle();
+}
+
+
+IScriptResult *ScriptCall::Error(const char *error, ...)
+{
+	va_list args;
+	va_start(args, error);
+
 	//	Push error string onto stack
-	lua_pushstring(this->parent->L, error);
+	lua_pushvfstring(this->parent->L, error, args);
+	//	lua_pushstring(this->parent->L, error);
 	result.strategy = ScriptResult::Error;
+
+	va_end(args);
 
 	return &result;
 }
 
-IScriptResult *ScriptCall::Yield()
+IScriptResult *ScriptCall::Await()
 {
 	result.strategy = ScriptResult::Yield;
 
@@ -162,4 +184,105 @@ IScriptResult *ScriptCall::Return()
 	return &result;
 }
 
+bool ScriptCall::ArgMethod(int slot, IScriptMethod **result)
+{
+	if (slot > argc)
+		return false;
+
+	slot++;
+
+	if (!lua_isfunction( this->parent->L , slot ))
+		return false;
+
+	if (result == nullptr)
+		return true;
+
+	int ref = lua_ref( this->parent->L , slot);
+	*result = new ScriptMethod(this->parent->L, ref);
+
+	return true;
+}
+
+bool ScriptCall::ArgTable(int slot, IScriptObject **result)
+{
+	if (slot > argc)
+		return false;
+
+	slot++;
+
+	if (!lua_istable( this->parent->L , slot ))
+		return false;
+
+	if (result == nullptr)
+		return true;
+
+	int ref = lua_ref( this->parent->L , slot);
+	*result = new ScriptObject(this->parent->parent->L, ref);
+
+	return true;
+}
+
+
+bool ScriptCall::ArgBuffer(int slot, void **result, size_t *size)
+{
+	if (slot > argc)
+		return false;
+
+	slot++;
+
+	if (!lua_isbuffer( this->parent->L , slot ))
+		return false;
+
+	if (result == nullptr)
+		return true;
+
+
+	*result = lua_tobuffer(this->parent->L, slot, size);
+
+	return true;
+}
+
+void ScriptCall::PushVarArgs(IScriptCall *from, int after)
+{
+	ScriptCall* friend_from = static_cast<ScriptCall *>(from);
+	lua_checkstack(this->parent->L, from->GetLength());
+
+	for (int arg = after; arg < from->GetLength(); arg++)
+	{
+		//	Use xpush to toss across lua_states
+		lua_xpush(friend_from->parent->L, this->parent->L, arg + 1);
+		returnc++;
+
+		/*
+		IScriptRef* ref;
+		if (!from->ArgObject(arg, &ref))
+			continue;
+
+		this->PushObject(ref);
+		delete ref;*/
+
+	}
+}
+
+void ScriptCall::PushArg(IScriptCall *from, int arg)
+{
+	ScriptCall* friend_from = static_cast<ScriptCall *>(from);
+	lua_checkstack(this->parent->L, 1);
+
+	//	Erm... we don't have an arg here guys!
+	//	if (arg > from->GetLength())
+	//		return;
+
+	lua_xpush(friend_from->parent->L, this->parent->L, arg + 1);
+	returnc++;
+}
+
+void ScriptCall::PushBuffer(void *data, size_t length)
+{
+	lua_checkstack(this->parent->L, 1);
+	void* buffer = lua_newbuffer(this->parent->L, length);
+	memcpy(buffer, data, length);
+
+	returnc++;
+}
 

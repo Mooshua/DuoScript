@@ -3,26 +3,21 @@
 #ifndef DUOSCRIPT_STRINGMAP_H
 #define DUOSCRIPT_STRINGMAP_H
 
+#include "Vendor/XXHash64.h"
+#include "Vendor/Robin/robin_map.h"
+#include "Vendor/Robin/robin_growth_policy.h"
+
 #include <string>
 #include <amtl/am-hashmap.h>
 
 namespace ke
 {
 
-	static int Hash(const char *string)
+	static size_t Hash(const char *string)
 	{
-		int x = 0b10101010;
-		char c = *string;
-
-		while ((c = *string++)) {
-			x = x + c;
-			//	XorShift
-			x ^= x << 13;
-			x ^= x >> 17;
-			x ^= x << 5;
-		}
-
-		return x;
+		XXHash64 hash = XXHash64(0b10101010);
+		hash.add(string, strlen(string));
+		return hash.hash();
 	}
 
 	static bool Equals(const char *a, const char *b)
@@ -41,15 +36,21 @@ namespace ke
 		}
 	public:
 		inline operator const char*() { return _str; }
-		int hash() {
+		inline bool operator==(const StringKey other) const { return strcmp(_str, other._str) == 0; }
+
+		size_t hash() {
 			if (_hash == -1)
 				_hash = Hash(_str);
 			return _hash;
 		}
+		size_t hash() const
+		{
+			return Hash(_str);
+		}
 
 	protected:
 		const char* _str;
-		int _hash = -1;
+		size_t _hash = -1;
 	};
 
 	class StringHashPolicy
@@ -64,6 +65,12 @@ namespace ke
 		static inline uint32_t hash(StringKey key) {
 			return key.hash();
 		}
+
+		//	For robinhash
+		size_t operator()(const StringKey &key) const noexcept
+		{
+			return key.hash();
+		}
 	};
 
 	template <typename T>
@@ -71,6 +78,13 @@ namespace ke
 	{
 
 	};
+
+	template <class T, class Key = StringKey, class Hash = StringHashPolicy,
+			class KeyEqual = std::equal_to<Key>,
+			class Allocator = std::allocator<std::pair<Key, T>>,
+			bool StoreHash = false>
+	using FastStringMap = tsl::robin_map<Key, T, Hash, KeyEqual, Allocator, StoreHash,
+			tsl::rh::power_of_two_growth_policy<4>>;
 
 }
 #endif //DUOSCRIPT_STRINGMAP_H

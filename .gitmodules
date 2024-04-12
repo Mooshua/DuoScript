@@ -14,3 +14,9 @@
 [submodule "pkg/luau"]
 	path = pkg/luau
 	url = https://github.com/luau-lang/luau/
+[submodule "pkg/mimalloc"]
+	path = pkg/mimalloc
+	url = https://github.com/microsoft/mimalloc
+[submodule "pkg/zip"]
+	path = pkg/zip
+	url = https://github.com/kuba--/zip

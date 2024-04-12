@@ -1,0 +1,6 @@
+
+# Cmake folders
+cmake*/
+
+# Auto-generated files
+pkg/sdk/common

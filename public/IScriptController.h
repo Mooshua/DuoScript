@@ -22,9 +22,9 @@ public:
 	= default;
 
 	template<class Entity>
-	IScriptRef* Make(IScriptIsolate* vm, Entity** result = nullptr)
+	IScriptRef* Make(IIsolateHandle* vm, Entity** result = nullptr)
 	{
-		return this->Make(vm, (void**)result, sizeof(IScriptControllerEntity<Entity>));
+		return this->Make(vm->Get(), (void**)result, sizeof(IScriptControllerEntity<Entity>));
 	}
 
 public:
@@ -60,6 +60,7 @@ public:
 
 	virtual IScriptResult* Namecall(IScriptCall* args) = 0;
 	virtual IScriptResult* NamecallStatic(IScriptCall* args) = 0;
+	virtual IScriptResult* Index(IScriptCall* index) = 0;
 
 	virtual void DestroyEntity(void* entity) = 0;
 
@@ -71,6 +72,9 @@ public:
 
 	fastdelegate::FastDelegate<IScriptResult*, IScriptCall*> _namecallStatic
 		= fastdelegate::MakeDelegate(this, &IBaseScriptController::NamecallStatic);
+
+	fastdelegate::FastDelegate<IScriptResult*, IScriptCall*> _indexer
+			= fastdelegate::MakeDelegate(this, &IBaseScriptController::Index);
 
 #if 0
 	fastdelegate::FastDelegate<void, void*> _destructor
@@ -117,6 +121,9 @@ class IScriptController : public virtual IBaseScriptController
 public:
 	typedef fastdelegate::FastDelegate<IScriptResult*, Entity*, IScriptCall*> MethodCallback;
 	typedef fastdelegate::FastDelegate<IScriptResult*, IScriptCall*> StaticMethodCallback;
+	typedef fastdelegate::FastDelegate<IScriptResult*, Entity*, IScriptCall*> Getter;
+	typedef fastdelegate::FastDelegate<IScriptResult*, Entity*, IScriptCall*> Setter;
+
 
 	///	The type that will be instantiated in the script VM
 	typedef IScriptControllerEntity<Entity> Userdata;
@@ -125,11 +132,11 @@ public:
 	{
 		_entityCallbacks.init();
 		_staticCallbacks.init();
+
+		_entityGet.init();
 	}
 
 protected:
-
-
 
 	///	Return to an IScriptCall with a new entity
 	IScriptResult* ReturnNew(IScriptCall* call, Entity* value)
@@ -142,6 +149,19 @@ protected:
 
 		call->PushObject(entity);
 		return call->Return();
+	}
+
+	///	Volunteer an entity as a script reference.
+	///	This is used when we're part of an interface, but not
+	///	directly handling the call's response.
+	IScriptRef* VolunteerNew(IScriptInvoke* call, Entity* value)
+	{
+		Entity* userdata;
+		IScriptRef* entity = _template->Make(call->GetIsolate(), &userdata);
+
+		*userdata = *value;
+
+		return entity;
 	}
 
 protected:
@@ -185,6 +205,32 @@ protected:
 #define CONTROLLER_STATIC_METHOD(name, method) \
 	this->AddStaticMethod(#name, fastdelegate::MakeDelegate(this, method) )
 
+	void AddGetter(const char* name, Getter callback)
+	{
+		_entityGet.add(_entityGet.findForAdd(name), name, callback);
+	}
+
+#define CONTROLLER_GETTER(name, method) \
+	this->AddGetter(#name, fastdelegate::MakeDelegate(this, method) )
+
+	IScriptResult* Index(IScriptCall* index)
+	{
+		Entity* self = index->GetSelf<Entity>();
+		if (self == nullptr)
+			return index->Error("Invalid __index invocation (null entity)");
+
+		char key[256];
+		if (!index->ArgString(1, key, sizeof(key)))
+			return index->Error("Cannot find key %s", key);
+
+		auto lookup = _entityGet.find(key);
+		if (!lookup.found())
+			return index->Error("Could not find key '%s' in type %s", key, _name);
+
+		Getter get = lookup->value;
+		return get(self, index);
+	}
+
 	/// Handle a script call on this entity
 	IScriptResult* Namecall(IScriptCall* namecall) override
 	{
@@ -195,13 +241,14 @@ protected:
 		auto lookup = _entityCallbacks.find(methodName);
 
 		if (!lookup.found())
-			return namecall->Error("invalid namecall");
+			return namecall->Error("invalid namecall %s", methodName);
+
+		MethodCallback method = lookup->value;
 
 		Entity* self = namecall->GetSelf<Entity>();
 		if (self == nullptr)
 			return namecall->Error("null entity");
 
-		MethodCallback method = lookup->value;
 		return method(self, namecall);
 	}
 
@@ -215,7 +262,7 @@ protected:
 		auto lookup = _staticCallbacks.find(methodName);
 
 		if (!lookup.found())
-			return namecall->Error("invalid static namecall");
+			return namecall->Error("invalid static namecall %s", methodName);
 
 		StaticMethodCallback method = lookup->value;
 		return method(namecall);
@@ -223,8 +270,12 @@ protected:
 
 private:
 
+	//ke::StringMap<MethodCallback> _entityCallbacks;
 	ke::StringMap<MethodCallback> _entityCallbacks;
 	ke::StringMap<StaticMethodCallback> _staticCallbacks;
+
+	ke::StringMap<Getter> _entityGet;
+	ke::StringMap<Setter> _entitySet;
 
 	//std::map<const char*, MethodCallback> _entityCallbacks;
 	//std::map<const char*, StaticMethodCallback> _staticCallbacks;

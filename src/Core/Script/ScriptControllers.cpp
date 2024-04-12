@@ -3,6 +3,7 @@
 #include "ScriptControllers.h"
 #include "ScriptVM.h"
 #include "ScriptObject.h"
+#include "Logging/Log.h"
 
 ControllerInstance::ControllerInstance(IScriptRef* metatable, IScriptRef* staticMetatable)
 {
@@ -30,6 +31,8 @@ IScriptRef* ControllerInstance::Make(IScriptIsolate* vm, void** result, int size
 	lua_setmetatable(isolate->L, -2);
 
 	int ref = lua_ref(isolate->L, -1);
+	lua_pop(isolate->L, 1);
+
 	return new ScriptRef(isolate->L, ref);
 }
 
@@ -37,18 +40,28 @@ IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* co
 {
 	IScriptRef* namecall = g_ScriptVM.NewMethod(&controller->_namecall);
 	IScriptRef* staticNamecall = g_ScriptVM.NewMethod(&controller->_namecallStatic);
+	IScriptRef* index = g_ScriptVM.NewMethod(&controller->_indexer);
 
 	//	=====================================
 	//	Create new userdata for global object
 	lua_newuserdata(L, 0);
 		//	Create global metatable
 		lua_newtable(L);
+
 			lua_getref(L, staticNamecall->AsReferenceId());
 				lua_rawsetfield(L, -2, "__namecall");
 
+			//	Don't allow scripts to read the metatable,
+			//	as they can hold on to method refs after their modules
+			//	have been unloaded (crashy, crashy! and unsafe.)
+			lua_newtable(L);
+				lua_setreadonly(L, -1, true);
+				lua_rawsetfield(L, -2, "__metatable");
+
 			lua_setreadonly(L, -1, true);
 		lua_setmetatable(L, -2);
-	int staticMetatable = lua_ref(L, -1);
+		int staticMetatable = lua_ref(L, -1);
+	lua_pop(L, 1);
 
 	//	little cha-cha slide here
 	lua_getref(L, staticMetatable);
@@ -61,18 +74,32 @@ IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* co
 		lua_getref(L, namecall->AsReferenceId());
 			lua_rawsetfield(L, -2, "__namecall");
 
+		lua_getref(L, index->AsReferenceId());
+			lua_rawsetfield(L, -2, "__index");
+
+		//	Don't allow scripts to read the metatable,
+		//	as they can hold on to method refs after their modules
+		//	have been unloaded (crashy, crashy! and unsafe.)
+		lua_newtable(L);
+			lua_setreadonly(L, -1, true);
+			lua_rawsetfield(L, -2, "__metatable");
+
 		lua_setreadonly(L, -1, true);
-	int metatable = lua_ref(L, -1);
+		int metatable = lua_ref(L, -1);
+	lua_pop(L, 1);
 
 	//	Delete references to methods
 	//	(They're now in our tables)
 	delete namecall;
+	delete index;
 	delete staticNamecall;
 
 	IControllerInstance* entityTemplate = new ControllerInstance(
 			new ScriptRef(L, metatable),
 			new ScriptRef(L, staticMetatable));
 	controller->SetTemplate(entityTemplate);
+
+	g_Log.Message("ScriptController", Log::SEV_DEBUG, "Registered controller %s", controller->GetName());
 
 	return entityTemplate;
 }
@@ -107,4 +134,5 @@ void ScriptControllerManager::Destroy(IControllerInstance *instance)
 	lua_setreadonly(L, -1, true);
 	lua_pop(L, 1);
 
+	g_Log.Message("ScriptController", Log::SEV_DEBUG, "Removed a controller");
 }

@@ -24,6 +24,7 @@ IScriptRef *ScriptRef::Clone()
 {
 	lua_getref(L, this->ref);
 	int newref = lua_ref(L, -1);
+	lua_pop(L, 1);
 
 	return new ScriptRef(this->L, newref);
 }

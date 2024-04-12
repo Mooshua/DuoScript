@@ -5,6 +5,7 @@
 
 
 #include "IScriptController.h"
+#include "Loop/Loop.h"
 
 class TestEntity
 {
@@ -21,6 +22,9 @@ public:
 
 		CONTROLLER_STATIC_METHOD(Hello, &TestController::Hello);
 		CONTROLLER_STATIC_METHOD(New, &TestController::New);
+		CONTROLLER_STATIC_METHOD(Await, &TestController::Await);
+
+		CONTROLLER_GETTER(Count, &TestController::GetCount);
 
 		CONTROLLER_METHOD(GetCount, &TestController::GetCount);
 		CONTROLLER_METHOD(Add, &TestController::Add);
@@ -33,6 +37,13 @@ public:
 		return this->ReturnNew(call, &entity);
 	}
 
+	IScriptResult* Await(IScriptCall* call)
+	{
+		printf("Yielding\n");
+
+		return call->Await();
+	}
+
 	IScriptResult* GetCount(TestEntity *self, IScriptCall *call)
 	{
 		call->PushInt(self->count);
@@ -41,6 +52,8 @@ public:
 
 	IScriptResult* Add(TestEntity *self, IScriptCall *call)
 	{
+		IFiberHandle* a;
+
 		int amount = 1;
 		call->ArgInt(1, &amount);
 

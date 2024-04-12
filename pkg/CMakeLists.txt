@@ -1,9 +1,20 @@
 
 # libuv
+# NOTE: statically linked uv is called uv_a!
+# "uv" is shared version. >:[
+set(LIBUV_BUILD_SHARED OFF)
 add_subdirectory(uv)
+
+# Zip
+add_subdirectory(zip)
+
+# mimalloc
+add_subdirectory(mimalloc)
 
 # luau
 add_subdirectory(luau)
+# use mimalloc allocator
+target_link_libraries(Luau.VM PUBLIC mimalloc-static)
 
 # HL2SDK
 
