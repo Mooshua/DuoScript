@@ -4,15 +4,10 @@
 #include "ScriptFiber.h"
 #include "ScriptCall.h"
 #include "ScriptObject.h"
-#include "luacodegen.h"
 #include "Luau/CodeGen.h"
 #include "ScriptHandles.h"
-#include "Controllers/ThreadController.h"
-#include "Controllers/PerformanceController.h"
 #include "mimalloc.h"
 #include "Logging/Log.h"
-#include "Controllers/FileSystemController.h"
-#include "Controllers/LogController.h"
 #include <amtl/am-string.h>
 
 
@@ -166,7 +161,7 @@ int ScriptVM::CFunction(lua_State *L)
 	if (fiber == nullptr)
 		luaL_errorL(L, "Invoking ScriptVM::CFunction in a non-fiber thread!");
 
-	fiber->call.Setup(argc);
+	fiber->call.SetupCall(argc);
 
 	ScriptResult* result = static_cast<ScriptResult *>((*delegate)(&fiber->call));
 
@@ -181,9 +176,9 @@ int ScriptVM::CFunction(lua_State *L)
 		case ScriptResult::Error:
 			lua_error(L);
 		case ScriptResult::Yield:
-			return lua_yield(L, fiber->call.returnc);
+			return lua_yield(L, fiber->call.stack_pop);
 		case ScriptResult::Clean:
-			return fiber->call.returnc;
+			return fiber->call.stack_pop;
 	}
 }
 
@@ -242,11 +237,6 @@ void ScriptVM::Initialize()
 
 	lua_pushvalue(L, LUA_GLOBALSINDEX);
 	luaL_register(L, nullptr, stdlibs);
-
-	controllers->Register(&g_ThreadController);
-	controllers->Register(new PerformanceController());
-	controllers->Register(new FileController());
-	controllers->Register(new LogController());
 
 	g_Log.Component("Luau", Log::STAT_GOOD, "Started");
 

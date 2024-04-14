@@ -7,7 +7,7 @@ IScriptResult *LogController::Info(IScriptCall *call)
 	return this->Log(call, Log::SEV_INFO);
 }
 
-IScriptResult *LogController::Log(IScriptCall *call, Log::Severity severity)
+IScriptResult *LogController::Log(IScriptCall *call, ILogger::Severity severity)
 {
 	char message[256];
 	if (!call->ArgString(1, message, sizeof(message)))

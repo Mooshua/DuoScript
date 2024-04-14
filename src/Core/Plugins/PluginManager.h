@@ -5,8 +5,12 @@
 
 class Plugin;
 
+#include <string>
+#include <vector>
+
 #include "Loop/Loop.h"
 #include "Plugin.h"
+#include <IPlugin.h>
 
 class PluginLoadResult
 {

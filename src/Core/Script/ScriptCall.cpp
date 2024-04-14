@@ -8,13 +8,13 @@
 ScriptCall::ScriptCall(ScriptFiber* parent)
 {
 	this->parent = parent;
-	this->argc = -1;
-	this->returnc = -1;
+	this->stack_push = -1;
+	this->stack_pop = -1;
 }
 
 void *ScriptCall::GetOpaqueSelf()
 {
-	if (1 > argc)
+	if (1 > stack_push)
 		return false;
 
 	if (!lua_isuserdata(this->parent->L, 1))
@@ -23,16 +23,26 @@ void *ScriptCall::GetOpaqueSelf()
 	return lua_touserdata(this->parent->L, 1);
 }
 
-void ScriptCall::Setup(int argc)
+void ScriptCall::SetupCall(int argc)
 {
-	this->argc = argc;
+	this->stack_push = argc;
 	this->result.strategy = ScriptResult::Invalid;
-	this->returnc = 0;
+	this->stack_pop = 0;
+}
+
+
+void ScriptCall::SetupReturn(int argc, int status)
+{
+	this->last_status = status;
+
+	this->stack_push = argc;
+	this->result.strategy = ScriptResult::Invalid;
+	this->stack_pop = 0;
 }
 
 int ScriptCall::GetLength()
 {
-	return this->argc;
+	return this->stack_push;
 }
 
 bool ScriptCall::TryGetNamecall(char *result, int maxlen)
@@ -50,7 +60,7 @@ bool ScriptCall::TryGetNamecall(char *result, int maxlen)
 #define CREATE_ACCESSOR(name, type, check, get) \
 	bool name (int slot, type *result )            \
 	{                                              \
-		if (slot > argc)						   \
+		if (slot > stack_push)						   \
 			return false;                                \
         slot++; /* Remove self pointer */                  \
 		if (! check ( this->parent->L , slot )) \
@@ -65,7 +75,7 @@ bool ScriptCall::TryGetNamecall(char *result, int maxlen)
 	void name (type value)                 \
     {                                   \
 		lua_checkstack(this->parent->L, 1); \
-		returnc++;                          \
+		stack_pop++;                          \
 		push (this->parent->L, value);\
 	}                                    \
                                         \
@@ -84,7 +94,7 @@ CREATE_PUSHER(ScriptCall::PushUnsigned, unsigned, lua_pushunsigned );
 
 bool ScriptCall::ArgObject(int slot, IScriptRef** result)
 {
-	if (slot > argc)
+	if (slot > stack_push)
 		return false;
 
 	slot++;
@@ -102,13 +112,13 @@ void ScriptCall::PushObject(IScriptRef *value)
 {
 	lua_checkstack(this->parent->L, 1);
 
-	returnc++;
+	stack_pop++;
 	lua_getref(this->parent->L, value->AsReferenceId());
 }
 
 bool ScriptCall::ArgString(int slot, char* result, int maxlen, int* written)
 {
-	if (slot > argc)
+	if (slot > stack_push)
 		return false;
 
 	slot++;
@@ -139,7 +149,7 @@ void ScriptCall::PushString(const char *value, int length)
 	if (length == -1)
 		length = strlen(value);
 
-	returnc++;
+	stack_pop++;
 	lua_pushlstring(this->parent->L, value, length);
 }
 
@@ -186,7 +196,7 @@ IScriptResult *ScriptCall::Return()
 
 bool ScriptCall::ArgMethod(int slot, IScriptMethod **result)
 {
-	if (slot > argc)
+	if (slot > stack_push)
 		return false;
 
 	slot++;
@@ -205,7 +215,7 @@ bool ScriptCall::ArgMethod(int slot, IScriptMethod **result)
 
 bool ScriptCall::ArgTable(int slot, IScriptObject **result)
 {
-	if (slot > argc)
+	if (slot > stack_push)
 		return false;
 
 	slot++;
@@ -225,7 +235,7 @@ bool ScriptCall::ArgTable(int slot, IScriptObject **result)
 
 bool ScriptCall::ArgBuffer(int slot, void **result, size_t *size)
 {
-	if (slot > argc)
+	if (slot > stack_push)
 		return false;
 
 	slot++;
@@ -242,16 +252,16 @@ bool ScriptCall::ArgBuffer(int slot, void **result, size_t *size)
 	return true;
 }
 
-void ScriptCall::PushVarArgs(IScriptCall *from, int after)
+void ScriptCall::PushVarArgs(IScriptPolyglotView *from, int after)
 {
-	ScriptCall* friend_from = static_cast<ScriptCall *>(from);
-	lua_checkstack(this->parent->L, from->GetLength());
+	ScriptCall* friend_from = static_cast<ScriptCall *>( from->ToPolyglot() );
+	lua_checkstack(this->parent->L, friend_from->GetLength());
 
-	for (int arg = after; arg < from->GetLength(); arg++)
+	for (int arg = after; arg < friend_from->GetLength(); arg++)
 	{
 		//	Use xpush to toss across lua_states
 		lua_xpush(friend_from->parent->L, this->parent->L, arg + 1);
-		returnc++;
+		stack_pop++;
 
 		/*
 		IScriptRef* ref;
@@ -264,9 +274,9 @@ void ScriptCall::PushVarArgs(IScriptCall *from, int after)
 	}
 }
 
-void ScriptCall::PushArg(IScriptCall *from, int arg)
+void ScriptCall::PushArg(IScriptPolyglotView *from, int arg)
 {
-	ScriptCall* friend_from = static_cast<ScriptCall *>(from);
+	ScriptCall* friend_from = static_cast<ScriptCall *>( from->ToPolyglot() );
 	lua_checkstack(this->parent->L, 1);
 
 	//	Erm... we don't have an arg here guys!
@@ -274,7 +284,7 @@ void ScriptCall::PushArg(IScriptCall *from, int arg)
 	//		return;
 
 	lua_xpush(friend_from->parent->L, this->parent->L, arg + 1);
-	returnc++;
+	stack_pop++;
 }
 
 void ScriptCall::PushBuffer(void *data, size_t length)
@@ -283,6 +293,42 @@ void ScriptCall::PushBuffer(void *data, size_t length)
 	void* buffer = lua_newbuffer(this->parent->L, length);
 	memcpy(buffer, data, length);
 
-	returnc++;
+	stack_pop++;
 }
 
+bool ScriptCall::IsYielding()
+{
+	return last_status == LUA_YIELD;
+}
+
+bool ScriptCall::IsError()
+{
+	//	if statements can suck it
+	switch (last_status)
+	{
+		case LUA_ERRRUN:
+			//	These two should never happen.
+		case LUA_ERRMEM:
+		case LUA_ERRERR:
+			return true;
+		default:
+			return false;
+	}
+}
+
+const char *ScriptCall::GetError()
+{
+	if (stack_push != 1)
+		return "(no error. this is bad. you should not see this. go yell at someone.)";
+
+	//	Okay. IN THE EVENT that the object error()'d
+	//	is not a string but a malformed object,
+	//	you all can just crash or whatever. I don't even care.
+	//	TODO: Start caring when we get around to sandboxing
+	return lua_tostring(this->parent->L, -1);
+}
+
+IScriptPolyglot *ScriptCall::ToPolyglot()
+{
+	return this;
+}

@@ -31,6 +31,8 @@ public:
 	//	Implementation details: Do not use
 	virtual IScriptRef* GetMetatable() = 0;
 	virtual IScriptRef* GetStaticMetatable() = 0;
+	virtual bool IsAlive() = 0;
+	virtual void Kill() = 0;
 
 protected:
 	virtual IScriptRef* Make(IScriptIsolate* vm, void** result, int size) = 0;
@@ -88,6 +90,7 @@ protected:
 class IBaseScriptControllerEntity
 {
 public:
+	virtual IControllerInstance* GetInstance() = 0;
 	virtual IBaseScriptController* GetController() = 0;
 	virtual void* GetEntity() = 0;
 };
@@ -96,14 +99,20 @@ template<typename Entity>
 class IScriptControllerEntity : IBaseScriptControllerEntity
 {
 public:
-	IScriptControllerEntity(IBaseScriptController* controller)
-		: _controller(controller)
+	IScriptControllerEntity(IControllerInstance* instance, IBaseScriptController* controller)
+		: _instance(instance)
+		, _controller(controller)
 	{}
-
+	IControllerInstance* GetInstance() final { return _instance; }
 	IBaseScriptController* GetController() final { return _controller; }
 	void* GetEntity() final { return &_entity; }
 
+	//	Allow anyone who knows the template type
+	//	to avoid static_cast-ing to get it.
+	inline Entity* AsEntity() { return &_entity; }
+
 private:
+	IControllerInstance* _instance;
 	IBaseScriptController* _controller;
 	Entity _entity;
 };
@@ -141,11 +150,11 @@ protected:
 	///	Return to an IScriptCall with a new entity
 	IScriptResult* ReturnNew(IScriptCall* call, Entity* value)
 	{
-		Entity* userdata;
+		Userdata* userdata;
 		IScriptRef* entity = _template->Make(call->GetIsolate(), &userdata);
 
 		//	Todo: Verify copy works well here
-		*userdata = *value;
+		*userdata->AsEntity() = *value;
 
 		call->PushObject(entity);
 		return call->Return();
@@ -156,10 +165,10 @@ protected:
 	///	directly handling the call's response.
 	IScriptRef* VolunteerNew(IScriptInvoke* call, Entity* value)
 	{
-		Entity* userdata;
+		Userdata* userdata;
 		IScriptRef* entity = _template->Make(call->GetIsolate(), &userdata);
 
-		*userdata = *value;
+		*userdata->AsEntity() = *value;
 
 		return entity;
 	}

@@ -5,12 +5,12 @@
 
 #include <IModule.h>
 
-MODULE_NEW(Cstrike)
+MODULE_NEW(Engine)
 {
 	MODULE_BUILTINS;
 
-	MODULE_NAME_SHORT("DuoCstrike");
-	MODULE_NAME("Cstrike", "Game-specific support for Counter-Strike 2");
+	MODULE_NAME_SHORT("DuoSource2");
+	MODULE_NAME("Source 2", "General support for the Source 2 engine");
 	MODULE_AUTHOR("Mooshua", "https://mooshua.net/");
 
 	MODULE_VERSION("1.0.0");

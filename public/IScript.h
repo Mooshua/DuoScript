@@ -79,7 +79,7 @@ public:
 	virtual bool TryContinue(IScriptInvoke** args = nullptr) = 0;
 
 	///	Invoke this isolate
-	virtual IScriptCall* Call(bool use) = 0;
+	virtual IScriptReturn* Call(bool use) = 0;
 };
 
 class IScriptIsolate

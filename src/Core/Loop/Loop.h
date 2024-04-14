@@ -3,8 +3,9 @@
 #ifndef DUOSCRIPT_LOOP_H
 #define DUOSCRIPT_LOOP_H
 
-#include "ILoop.h"
 #include "uv.h"
+
+#include "ILoop.h"
 
 class Loop : public ILoop
 {
@@ -15,6 +16,7 @@ public:
 	bool Destroy();
 
 public:
+	uv_loop_t* AsLoop() override;
 	IAsyncHandle* NewAsync(ILoop::Async callback) override;
 	IDelayHandle* NewDelay(ILoop::Delay callback) override;
 	IBaseHandle* NewWorkUnsafe(void* work, WorkProcessor processor, WorkReceiver receiver) override;

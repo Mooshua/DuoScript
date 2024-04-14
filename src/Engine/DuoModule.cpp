@@ -2,13 +2,13 @@
 
 #include "DuoModule.h"
 
-MODULE_INIT(Cstrike);
+MODULE_INIT(Engine);
 
-void Cstrike::OnReady()
+void Engine::OnReady()
 {
 	this->OnScriptReady(g_Duo->ScriptController());
 }
 
-void Cstrike::OnScriptReady(IScriptControllerManager *manager)
+void Engine::OnScriptReady(IScriptControllerManager *manager)
 {
 }

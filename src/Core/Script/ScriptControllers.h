@@ -14,12 +14,21 @@ public:
 	ControllerInstance(IScriptRef* metatable, IScriptRef* staticMetatable);
 	virtual ~ControllerInstance();
 
+public:
+	void Kill() override { _killed = true; }
+
 protected:
 	virtual IScriptRef* Make(IScriptIsolate* vm, void** result, int size);
 
 	IScriptRef* GetMetatable() override { return metatable; }
 	IScriptRef* GetStaticMetatable() override { return staticMetatable; }
+	bool IsAlive() override { return !_killed; };
+
 protected:
+	///	Set to true when the underlying controller object
+	///	has been killed. Used to prevent accessing deallocated memory.
+	bool _killed;
+
 	IScriptRef* metatable;
 	IScriptRef* staticMetatable;
 };

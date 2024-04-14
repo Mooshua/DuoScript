@@ -3,8 +3,8 @@
 #ifndef DUOSCRIPT_WORKHANDLE_H
 #define DUOSCRIPT_WORKHANDLE_H
 
-#include <ILoop.h>
 #include <uv.h>
+#include <ILoop.h>
 
 #include "Loop.h"
 

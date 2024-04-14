@@ -3,8 +3,8 @@
 #ifndef DUOSCRIPT_FILES_H
 #define DUOSCRIPT_FILES_H
 
-#include <IFiles.h>
 #include <uv.h>
+#include <IFiles.h>
 
 class Files
 {

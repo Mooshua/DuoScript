@@ -5,10 +5,11 @@
 
 class PluginManager;
 
+#include "PluginManager.h"
+#include "Script/ScriptVM.h"
 #include <IPlugin.h>
 #include <zip.h>
-#include "Script/ScriptVM.h"
-#include "PluginManager.h"
+
 
 class Plugin : public virtual IPlugin, public virtual IPluginResources
 {

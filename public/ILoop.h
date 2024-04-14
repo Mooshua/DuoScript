@@ -6,6 +6,14 @@
 #include <FastDelegate.h>
 #include <cstdint>
 
+//	Declare this here so we don't have to
+//	reference uv.h. Enables practical referencing
+//	to our loop without libuv linkage.
+//	Is this causing errors? Put #include <uv.h> ABOVE <ILoop.h>!
+#ifndef UV_H
+	struct uv_loop_t;
+#endif
+
 class IBaseHandle
 {
 public:
@@ -57,6 +65,8 @@ public:
 
 
 public:
+	virtual uv_loop_t* AsLoop() = 0;
+
 	virtual IAsyncHandle* NewAsync(ILoop::Async callback) = 0;
 	virtual IDelayHandle* NewDelay(ILoop::Delay callback) = 0;
 

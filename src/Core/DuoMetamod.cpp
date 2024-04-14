@@ -55,7 +55,7 @@ bool DuoMetamod::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	g_Loop.Initialize();
 	g_ScriptVM.Initialize();
 
-	g_Duo = new Duo();
+	g_Duo = new Duo(late);
 
 	g_Log.Component("Duo Core", Log::STAT_GOOD, "Started");
 
@@ -103,7 +103,7 @@ void *DuoMetamod::OnMetamodQuery(const char *iface, int *ret)
 	if (strcmp(iface, INTERFACE_MODULEINTRODUCER_001) == 0)
 	{
 		*ret = IFACE_OK;
-		return static_cast<IModuleIntroducer*>(&g_ModuleOnboarding);
+		return static_cast<IModuleIntroducer*>(&g_ModuleManager);
 	}
 
 	*ret = IFACE_FAILED;

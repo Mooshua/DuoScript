@@ -3,9 +3,9 @@
 #ifndef DUOSCRIPT_THREADCONTROLLER_H
 #define DUOSCRIPT_THREADCONTROLLER_H
 
+#include "Loop/Loop.h"
 #include "IScriptController.h"
 #include "sourcehook.h"
-#include "Loop/Loop.h"
 
 class ThreadResumer
 {

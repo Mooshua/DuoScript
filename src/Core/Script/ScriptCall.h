@@ -36,7 +36,7 @@ public:
 	Strategy strategy = Invalid;
 };
 
-class ScriptCall : public IScriptCall
+class ScriptCall : public IScriptPolyglot
 {
 
 public:
@@ -44,14 +44,38 @@ public:
 
 public:
 
-	void Setup(int argc);
+	void SetupCall(int argc);
+	void SetupReturn(int argc, int status);
 
 	ScriptFiber *parent;
 
 	ScriptResult result;
 
-	int argc;
-	int returnc;
+	//	The amount of items on the stack given to us from
+	//	lua. This is used for method calls/returns, to tell
+	//	us how many items lua has given us.
+	int stack_push;
+
+	//	How big the stack is from stuff WE PUT there.
+	//	This is used when returning to lua, so it knows
+	//	how much of our sorry BS to remove from it's area.
+	int stack_pop;
+
+	//	The last status provided to us from lua.
+	//	set in SetupReturn().
+	int last_status;
+public:
+	virtual IScriptPolyglot* ToPolyglot();
+
+public:
+	///	Returns true when the result is a yield
+	virtual bool IsYielding();
+
+	///	Returns true when the thread has errored.
+	virtual bool IsError();
+
+	///	Returns the error, when IsError() is true.
+	virtual const char* GetError();
 
 public:
 	virtual IIsolateHandle *GetIsolate();
@@ -84,8 +108,8 @@ public:
 	void PushInt(int value) override;
 	void PushUnsigned(unsigned value) override;
 
-	void PushVarArgs(IScriptCall* from, int after) override;
-	void PushArg(IScriptCall *from, int arg) override;
+	void PushVarArgs(IScriptPolyglotView* from, int after) override;
+	void PushArg(IScriptPolyglotView *from, int arg) override;
 	void PushBuffer(void* data, size_t length) override;
 
 public:

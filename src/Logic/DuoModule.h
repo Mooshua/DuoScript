@@ -5,12 +5,12 @@
 
 #include <IModule.h>
 
-MODULE_NEW(Cstrike)
+MODULE_NEW(Logic)
 {
 	MODULE_BUILTINS;
 
-	MODULE_NAME_SHORT("DuoCstrike");
-	MODULE_NAME("Cstrike", "Game-specific support for Counter-Strike 2");
+	MODULE_NAME_SHORT("DuoLogic");
+	MODULE_NAME("Logic", "Universal DuoScript controllers");
 	MODULE_AUTHOR("Mooshua", "https://mooshua.net/");
 
 	MODULE_VERSION("1.0.0");

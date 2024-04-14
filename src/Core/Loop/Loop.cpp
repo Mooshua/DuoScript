@@ -89,3 +89,8 @@ IBaseHandle *Loop::NewWorkUnsafe(void *work, ILoop::WorkProcessor processor, ILo
 	return new WorkHandle(work, processor, receiver, this);
 }
 
+uv_loop_t *Loop::AsLoop()
+{
+	return &this->loop;
+}
+

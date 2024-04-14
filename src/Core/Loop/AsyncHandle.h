@@ -3,9 +3,9 @@
 #ifndef DUOSCRIPT_ASYNCHANDLE_H
 #define DUOSCRIPT_ASYNCHANDLE_H
 
+#include <uv.h>
 
 #include "ILoop.h"
-#include "uv.h"
 #include "Loop.h"
 
 class AsyncHandle : public virtual IAsyncHandle

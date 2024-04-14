@@ -69,9 +69,7 @@ PluginLoadResult *PluginManager::FindPlugin(const char *name)
 
 void PluginManager::LoadAllPlugins()
 {
-	//	Use ifilesystem to accelerate this
 	std::vector<std::string> plugin_files = std::vector<std::string>();
-
 	g_Files.GetFiles(&plugin_files, "plugins");
 
 	for (const std::string &item: plugin_files)

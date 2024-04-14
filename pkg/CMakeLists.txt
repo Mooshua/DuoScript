@@ -1,8 +1,7 @@
 
 # libuv
 # NOTE: statically linked uv is called uv_a!
-# "uv" is shared version. >:[
-set(LIBUV_BUILD_SHARED OFF)
+# "uv" is shared version.
 add_subdirectory(uv)
 
 # Zip
@@ -61,6 +60,16 @@ add_library(Metamod STATIC
         metamod/core/sourcehook/sourcehook_impl_cproto.cpp
     )
 
+add_library(MetamodAbstract STATIC
+
+        metamod/core/sourcehook/sourcehook.cpp
+        metamod/core/sourcehook/sourcehook_impl_chookidman.cpp
+        metamod/core/sourcehook/sourcehook_impl_chookmaninfo.cpp
+        metamod/core/sourcehook/sourcehook_impl_cvfnptr.cpp
+        metamod/core/sourcehook/sourcehook_impl_cproto.cpp
+)
+
+target_compile_definitions(MetamodAbstract PUBLIC META_NO_HL2SDK)
 
 
 if (LINUX)

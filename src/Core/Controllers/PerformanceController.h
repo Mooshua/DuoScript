@@ -3,9 +3,9 @@
 #ifndef DUOSCRIPT_PERFORMANCECONTROLLER_H
 #define DUOSCRIPT_PERFORMANCECONTROLLER_H
 
+#include "uv.h"
 #include <IScript.h>
 #include <IScriptController.h>
-#include "uv.h"
 
 class PerformanceEntity
 {

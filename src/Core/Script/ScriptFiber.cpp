@@ -3,6 +3,7 @@
 #include "ScriptFiber.h"
 #include "ScriptHandles.h"
 #include "ScriptObject.h"
+#include "Logging/Log.h"
 
 ScriptFiber::ScriptFiber(ScriptIsolate *parent, lua_State *L, IScriptRef* thread_ref)
 	: call(ScriptCall(this))
@@ -53,7 +54,7 @@ bool ScriptFiber::TrySetup(IScriptMethod *method, IScriptInvoke** args)
 	if (!this->IsReady())
 		return false;
 
-	call.Setup(-1);
+	call.SetupCall(-1);
 	call.PushObject(method);
 
 	if (args != nullptr)
@@ -67,7 +68,7 @@ bool ScriptFiber::TryContinue(IScriptInvoke **args)
 	if (this->L == nullptr || this->thread_reference == nullptr)
 		return false;
 
-	call.Setup(-1);
+	call.SetupCall(-1);
 
 	if (args != nullptr)
 		*args = &this->call;
@@ -75,39 +76,36 @@ bool ScriptFiber::TryContinue(IScriptInvoke **args)
 	return true;
 }
 
-IScriptCall *ScriptFiber::Call(bool use)
+IScriptReturn *ScriptFiber::Call(bool use)
 {
-	int status = lua_resume(L, nullptr, call.returnc - this->first_invoke);
+	int status = lua_resume(L, nullptr, call.stack_pop - this->first_invoke);
 	this->first_invoke = false;
 
-	if (status == LUA_OK && !use)
+	call.SetupReturn(lua_gettop(L), status);
+
+	if (call.IsError()) {
+
+		g_Log.Message("Luau", ILogger::SEV_ERROR,
+					  "Script error: %s", lua_tostring(L, -1));
+		lua_Debug debug;
+
+		for (int i = 0; i < lua_stackdepth(L); ++i) {
+
+			lua_getinfo(L, i, "nsl", &debug);
+
+			g_Log.Message("Luau", ILogger::SEV_ERROR,
+						  "    [%s:%i] %s @ %s",
+						  debug.short_src, debug.linedefined, debug.what, debug.name);
+		}
+	}
+
+	if (!use)
 	{
 		//	We're fire and forget, so no one is holding on to us.
 		//	Delete ourselves so we can be returned to the thread pool.
 		delete this;
+		return nullptr;
 	}
 
-	if (status != LUA_OK)
-	{
-		if (status == LUA_YIELD)
-		{
-			//	TODO
-			return nullptr;
-		}
-
-		printf("%s\n", lua_tostring(L, -1));
-		printf("%i / %s\n", lua_stackdepth(L), lua_debugtrace(L));
-
-		for (int i = 0; i < lua_stackdepth(L); ++i) {
-			lua_Debug debug;
-
-			lua_getinfo(L, i, "nsl", &debug);
-
-			printf("\t[%i] %s", i, debug.name);
-		}
-
-		printf("======================\n");
-	}
-
-	return nullptr;
+	return &call;
 }

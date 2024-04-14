@@ -28,7 +28,7 @@ public:
 
 
 	///	Invoke this isolate
-	virtual IScriptCall* Call(bool use);
+	virtual IScriptReturn* Call(bool use);
 
 public:
 	ScriptCall call;

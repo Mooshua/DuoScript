@@ -16,10 +16,12 @@ class GameSessionConfiguration_t { };
 class Duo
 {
 public:
-	Duo();
+	Duo(bool late);
 	~Duo();
+protected:	//	Handlers
+	void Start();
 
-protected:
+protected:	//	Hooks
 	void OnStartupServer(const GameSessionConfiguration_t& config, ISource2WorldSession* _, const char* map);
 	void OnGameFrame(bool simulating, bool first, bool last);
 };

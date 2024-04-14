@@ -3,10 +3,11 @@
 #ifndef DUOSCRIPT_FILESYSTEMCONTROLLER_H
 #define DUOSCRIPT_FILESYSTEMCONTROLLER_H
 
+#include "uv.h"
+
 #include <IScriptController.h>
 #include <IScript.h>
 
-#include "uv.h"
 #include "mimalloc.h"
 
 class FileController;

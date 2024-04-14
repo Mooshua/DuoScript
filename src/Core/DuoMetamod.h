@@ -3,6 +3,8 @@
 #ifndef DUOSCRIPT_DUOMETAMOD_H
 #define DUOSCRIPT_DUOMETAMOD_H
 
+#include <uv.h>
+
 #include <ISmmPlugin.h>
 #include <ISmmAPI.h>
 
@@ -40,7 +42,7 @@ public:
 
 public:
 	const char *GetAuthor() override { return "Mooshua"; };
-	const char *GetName() override { return "DuoScript"; };
+	const char *GetName() override { return "[DuoMod] DuoScript"; };
 	const char *GetDescription() override { return "Modding platform for Counter-Strike 2"; };
 	const char *GetURL() override { return "https://mooshua.net/"; };
 	const char *GetLicense() override { return "GPLv3"; };

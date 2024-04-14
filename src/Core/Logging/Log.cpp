@@ -46,6 +46,14 @@ void Log::Component(const char *system, Log::Status status, const char *fmt, ...
 	va_end(args);
 }
 
+void Log::Tip(const char *system, const char *fmt, ...)
+{
+	std::va_list args;
+	va_start(args, fmt);
+		this->TipEx(system, fmt, args);
+	va_end(args);
+}
+
 void Log::ComponentEx(const char *system, Log::Status status, const char *fmt, va_list args)
 {
 	char inner_message[4096];
@@ -96,6 +104,23 @@ void Log::MessageEx(const char *system, Log::Severity severity, const char *fmt,
 		g_Engine->LogPrint(message);
 }
 
+void Log::TipEx(const char *system, const char *fmt, va_list args)
+{
+	char inner_message[4096];
+	char message[4096];
+
+	const char* tip_thing = Reset "[" ColorYellow "tip!" Reset "]" ColorYellow;
+
+	ke::SafeVsprintf(inner_message, sizeof(inner_message), fmt, args);
+	ke::SafeSprintf(message, sizeof(message), Reset "* %s tip %13s " Reset "| " ColorOrange " %s \n" Reset,
+					tip_thing, system, inner_message);
+
+	if (g_Engine == nullptr)
+		printf("%s",message);
+	else
+		g_Engine->LogPrint(message);
+}
+
 const char *Log::ToString(Log::Status status)
 {
 	static const char* values[LEN_STATUS]  = {
@@ -119,6 +144,8 @@ const char *Log::ToString(Log::Severity severity)
 
 	return values[severity];
 }
+
+
 
 /*
 const char *Log::ToColor(const char *string)

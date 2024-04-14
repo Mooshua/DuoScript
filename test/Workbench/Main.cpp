@@ -2,13 +2,13 @@
 
 #define NOT_COMPILING_DUOSCRIPT
 
+#include "uv.h"
 #include <iostream>
 
 #include "Script/ScriptVM.h"
 #include "TestController.h"
 #include "Luau/Compiler.h"
 #include "Script/ScriptFiber.h"
-#include "uv.h"
 
 TestController g_TestController;
 
