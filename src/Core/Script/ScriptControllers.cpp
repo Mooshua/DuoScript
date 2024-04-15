@@ -61,8 +61,8 @@ IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* co
 				lua_rawsetfield(L, -2, "__metatable");
 
 			lua_setreadonly(L, -1, true);
+			int staticMetatable = lua_ref(L, -1);
 		lua_setmetatable(L, -2);
-		int staticMetatable = lua_ref(L, -1);
 	lua_pop(L, 1);
 
 	//	little cha-cha slide here
@@ -137,8 +137,8 @@ void ScriptControllerManager::Destroy(IControllerInstance *instance)
 	lua_pop(L, 1);
 
 	lua_getref(L, instance->GetStaticMetatable()->AsReferenceId());
-	lua_cleartable(L, -1);
 	lua_setreadonly(L, -1, false);
+	lua_cleartable(L, -1);
 	lua_setreadonly(L, -1, true);
 	lua_pop(L, 1);
 

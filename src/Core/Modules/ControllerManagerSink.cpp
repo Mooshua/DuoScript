@@ -28,8 +28,8 @@ IControllerInstance *ControllerManagerSink::Register(IBaseScriptController *cont
 
 void ControllerManagerSink::Destroy(IControllerInstance *instance)
 {
-	//	TODO: make it so morons cant unregister controllers from other plugins here
-	//	BETTER IDEA: anhillate all morons
+	//	TODO: make it so morons cant unregister controllers from other modules here
+	//	BETTER IDEA: annihilate all morons
 	this->upstream->Destroy(instance);
 
 	//	God I hate C++

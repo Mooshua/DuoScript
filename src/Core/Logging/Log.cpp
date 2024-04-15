@@ -60,7 +60,9 @@ void Log::ComponentEx(const char *system, Log::Status status, const char *fmt, v
 	char message[4096];
 
 	ke::SafeVsprintf(inner_message, sizeof(inner_message), fmt, args);
-	ke::SafeSprintf(message, sizeof(message), Reset "* %s init %12s " Reset "| %s \n" ,
+	this->Sanitize(inner_message);
+
+	ke::SafeSprintf(message, sizeof(message), Reset "* %s init %15s " Reset "| %s\n" ,
 					this->ToString(status), system, inner_message);
 
 #if 0
@@ -95,7 +97,9 @@ void Log::MessageEx(const char *system, Log::Severity severity, const char *fmt,
 	char message[4096];
 
 	ke::SafeVsprintf(inner_message, sizeof(inner_message), fmt, args);
-	ke::SafeSprintf(message, sizeof(message), Reset "* %s %17s " Reset "| %s \n" ,
+	this->Sanitize(inner_message);
+
+	ke::SafeSprintf(message, sizeof(message), Reset "* %s %20s " Reset "| %s\n" ,
 					this->ToString(severity), system, inner_message);
 
 	if (g_Engine == nullptr)
@@ -112,7 +116,9 @@ void Log::TipEx(const char *system, const char *fmt, va_list args)
 	const char* tip_thing = Reset "[" ColorYellow "tip!" Reset "]" ColorYellow;
 
 	ke::SafeVsprintf(inner_message, sizeof(inner_message), fmt, args);
-	ke::SafeSprintf(message, sizeof(message), Reset "* %s tip %13s " Reset "| " ColorOrange " %s \n" Reset,
+	this->Sanitize(inner_message);
+
+	ke::SafeSprintf(message, sizeof(message), Reset "* %s tip %16s " Reset "| " ColorOrange " %s\n" Reset,
 					tip_thing, system, inner_message);
 
 	if (g_Engine == nullptr)
@@ -143,6 +149,16 @@ const char *Log::ToString(Log::Severity severity)
 	};
 
 	return values[severity];
+}
+
+//	Prevent ANSI escape sequences from being written to the console
+void Log::Sanitize(char *string)
+{
+	for (int i = 0; string[i] != '\0'; i++)
+	{
+		if (string[i] == '\x1')
+			string[i] = '^';
+	}
 }
 
 

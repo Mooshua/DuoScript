@@ -22,6 +22,7 @@ private:
 	//const char* ToColor(const char* string);
 	const char* ToString(Status status);
 	const char* ToString(Severity severity);
+	void Sanitize(char* string);
 };
 
 extern Log g_Log;

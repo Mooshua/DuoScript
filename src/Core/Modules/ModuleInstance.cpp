@@ -8,3 +8,8 @@ ModuleInstance::ModuleInstance()
 {
 
 }
+
+ModuleInstance::~ModuleInstance()
+{
+
+}

@@ -20,6 +20,10 @@ public:
 	~Duo();
 protected:	//	Handlers
 	void Start();
+	void Stop();
+
+protected:
+	bool _started;
 
 protected:	//	Hooks
 	void OnStartupServer(const GameSessionConfiguration_t& config, ISource2WorldSession* _, const char* map);

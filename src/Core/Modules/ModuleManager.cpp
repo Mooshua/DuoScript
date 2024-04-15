@@ -36,6 +36,24 @@ void ModuleManager::Hello(IModule *myself, PluginId* id)
 	myself->OnReady();
 }
 
+void ModuleManager::Goodbye(IModule *myself, PluginId *id)
+{
+	g_Log.Message("Duo Modules", Log::SEV_DEBUG,
+				  "Unloading module '%s'", myself->GetName());
+
+	auto lookup = _modules.find(*id);
+	//	wtf?
+	if (!lookup.found()) {
+		g_Log.Message("Duo Modules", Log::SEV_WARN, "Plugin already unregistered!");
+		return;
+	}
+
+	ModuleInstance* instance = lookup->value;
+	delete instance;
+
+	//	Now remove the id to mark as unregistered
+	_modules.removeIfExists(*id);
+}
 
 
 ModuleManager::ModuleManager()
@@ -69,7 +87,7 @@ bool ModuleManager::LoadModule(const char *name)
 	g_Log.Message("Duo Modules", ILogger::SEV_INFO, "Loading module %s", path);
 
 	PluginId id = g_MetamodPluginManager->Load(
-			path, g_PLID, already, error, sizeof(error));
+			path, -1, already, error, sizeof(error));
 
 	if (id == Pl_BadLoad)
 	{
@@ -83,4 +101,31 @@ bool ModuleManager::LoadModule(const char *name)
 		g_Log.Message("Duo Modules", ILogger::SEV_WARN, "Attempted to load already loaded plugin %s", path);
 		return true;	//	technically a success?
 	}
+
+	return true;
 }
+
+bool ModuleManager::UnloadModule(PluginId id)
+{
+	//	Service collection is removed in ->Goodbye() call.
+
+	char error[2048];
+	if (!g_MetamodPluginManager->Unload(id, true, error, sizeof(error)))
+	{
+		//	Error unloading!
+		g_Log.Message("Duo Modules", ILogger::SEV_ERROR, "Error unloading %i: %s", id, error);
+		return false;
+	}
+
+	g_Log.Message("Duo Modules", ILogger::SEV_INFO, "Unloaded module %i.", id);
+	return true;
+}
+
+void ModuleManager::UnloadAllModules()
+{
+	for (auto iter = _modules.iter(); !iter.empty(); iter.next()) {
+		this->UnloadModule(iter->key);
+	}
+}
+
+

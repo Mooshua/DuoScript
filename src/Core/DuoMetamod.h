@@ -40,6 +40,9 @@ public:
 public:
 	void *OnMetamodQuery(const char* iface, int *ret);
 
+protected:
+	bool is_late;
+
 public:
 	const char *GetAuthor() override { return "Mooshua"; };
 	const char *GetName() override { return "[DuoMod] DuoScript"; };

@@ -16,10 +16,16 @@ public:
 
 	void LoadAllModules();
 
+	bool UnloadModule(PluginId id);
+
+	void UnloadAllModules();
+
 
 public:	//	IModuleIntroducer
 	virtual ILogger* GetLogger();
 	virtual void Hello(IModule* myself, PluginId* id);
+	virtual void Goodbye(IModule* myself, PluginId* id);
+
 
 protected:
 	ke::IntMap<ModuleInstance*> _modules;

@@ -18,10 +18,11 @@ Duo::Duo(bool late)
 
 	g_Log.Component("Duo Hooks", Log::STAT_GOOD, "Started");
 
+	_started = false;
+
 	if (late)
 	{
-		//	Late loads need special recovery
-		g_Log.Component("Duo Hooks", Log::STAT_NOTE, "Forcing late-load");
+		g_Log.Component("Duo Hooks", Log::STAT_NOTE, "Late load detected");
 		this->Start();
 	}
 }
@@ -31,14 +32,27 @@ Duo::~Duo()
 	SH_REMOVE_HOOK(INetworkServerService, StartupServer, g_NetworkServer, SH_MEMBER(this, &Duo::OnStartupServer), true);
 	SH_REMOVE_HOOK(ISource2Server, GameFrame, g_Server, SH_MEMBER(this, &Duo::OnGameFrame), false);
 
+	this->Stop();
+
 	g_Log.Component("Duo Hooks", Log::STAT_NOTE, "Stopped");
 }
 
 void Duo::Start()
 {
+	if (_started)
+		return;
+
+	_started = true;
+
 	g_ModuleManager.LoadAllModules();
 	g_PluginManager.LoadAllPlugins();
 }
+
+void Duo::Stop()
+{
+	g_ModuleManager.UnloadAllModules();
+}
+
 
 void Duo::OnStartupServer(const GameSessionConfiguration_t& config, ISource2WorldSession* _, const char* map)
 {
@@ -56,6 +70,7 @@ void Duo::OnGameFrame(bool simulating, bool first, bool last)
 
 	RETURN_META(MRES_IGNORED);
 }
+
 
 
 

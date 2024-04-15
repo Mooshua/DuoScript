@@ -51,6 +51,12 @@ public:
 	///	@param myself Your ISmmPlugin instance
 	virtual void Hello(IModule* myself, PluginId* id) = 0;
 
+	///	@brief Remove your plugin from DuoScript
+	///	This should be called in your unload() method,
+	///	while your plugin is still alive so Duo can still interact
+	///	with your components.
+	virtual void Goodbye(IModule* myself, PluginId* id) = 0;
+
 	///	@brief Get a copy of the DuoScript logger
 	///	You can use this to log load failures.
 	virtual ILogger* GetLogger() = 0;
@@ -68,6 +74,7 @@ public:
 #define MODULE_BUILTINS \
 	virtual void DuoLoad(IDuoServices* services); \
 	virtual bool Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlength, bool late); \
+    virtual bool Unload(char *error, size_t maxlength);                    \
 	virtual void OnReady();\
 	virtual bool QueryRunning(char* error, size_t maxlen); \
 	virtual void AllPluginsLoaded();
@@ -83,10 +90,11 @@ public:
 	void classname :: AllPluginsLoaded() \
 	{	\
 		{                            \
-			int ret;            \
+			int ret;                         \
+            int source_plugin;                        \
         	g_Intro_ =           \
 				static_cast<IModuleIntroducer*>(\
-				g_SMAPI->MetaFactory(INTERFACE_MODULEINTRODUCER, &ret, &g_PLID));  \
+				g_SMAPI->MetaFactory(INTERFACE_MODULEINTRODUCER, &ret, &source_plugin));  \
                                \
         	if (g_Intro_ == nullptr) \
 				return;              \
@@ -103,6 +111,13 @@ public:
     	return false;                                \
 	}
 
+#define MODULE_IMPL_UNLOAD(classname) \
+	bool classname :: Unload (char *error, size_t size) \
+	{                                    \
+		g_Intro_->Goodbye(this, &g_PLID);	\
+		return true;								  \
+	}
+
 #define MODULE_INIT(classname) \
 	PLUGIN_EXPOSE(classname, g_##classname)      \
     IDuoServices* g_Duo;       \
@@ -112,8 +127,8 @@ public:
 	void classname :: DuoLoad(IDuoServices* services) \
 	{ g_Duo = services; }      \
                                \
-	MODULE_IMPL_LOAD(classname)\
-
+	MODULE_IMPL_LOAD(classname)   \
+	MODULE_IMPL_UNLOAD(classname)
 
 #define MODULE_LICENSE(license) \
 	virtual const char *GetLicense() { return license; }
