@@ -1,6 +1,7 @@
 [submodule "pkg/metamod"]
 	path = pkg/metamod
-	url = https://github.com/alliedmodders/metamod-source.git
+	url = https://github.com/Mooshua/metamod-source.git
+	branch = feat/templated-sourcehook
 [submodule "pkg/sdk"]
 	path = pkg/sdk
 	url = https://github.com/alliedmodders/hl2sdk.git

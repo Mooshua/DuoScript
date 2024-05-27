@@ -8,23 +8,20 @@
 #include "Modules/ModuleManager.h"
 #include "sourcehook/sourcehook.h"
 
-#include "AwesomeHook/AwesomeHook.h"
-
 Duo* g_Duo;
 
-SH_DECL_HOOK3_void(INetworkServerService, StartupServer, SH_NOATTRIB, 0, const GameSessionConfiguration_t&, ISource2WorldSession*, const char*);
-SH_DECL_HOOK3_void(ISource2Server, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
+auto OnNetworkStartupServer = SourceHook::Hook<INetworkServerService, &INetworkServerService::StartupServer,
+	void, const GameSessionConfiguration_t&, ISource2WorldSession*, const char*>::Make();
 
-auto GameFrameHook = SourceHook::Hook<&g_SHPtr, ISource2Server, &ISource2Server::GameFrame, void, bool, bool, bool>::Make();
+auto OnServerGameFrame = SourceHook::Hook<ISource2Server, &ISource2Server::GameFrame,
+	void, bool, bool, bool>::Make();
 
 Duo::Duo(bool late)
 {
-	SH_ADD_HOOK(INetworkServerService, StartupServer, g_NetworkServer, SH_MEMBER(this, &Duo::OnStartupServer), true);
-	SH_ADD_HOOK(ISource2Server, GameFrame, g_Server, SH_MEMBER(this, &Duo::OnGameFrame), false);
+	OnNetworkStartupServer->Add(g_NetworkServer, true, SH_MEMBER(this, &Duo::OnStartupServer));
+	OnServerGameFrame->Add(g_Server, false, SH_MEMBER(this, &Duo::OnGameFrame));
 
 	g_Log.Component("Duo Hooks", Log::STAT_GOOD, "Started");
-
-	GameFrameHook->Add(g_PLID, g_Server, false, SH_MEMBER(this, &Duo::OnGameFrame));
 
 	_started = false;
 
@@ -37,8 +34,8 @@ Duo::Duo(bool late)
 
 Duo::~Duo()
 {
-	SH_REMOVE_HOOK(INetworkServerService, StartupServer, g_NetworkServer, SH_MEMBER(this, &Duo::OnStartupServer), true);
-	SH_REMOVE_HOOK(ISource2Server, GameFrame, g_Server, SH_MEMBER(this, &Duo::OnGameFrame), false);
+	OnNetworkStartupServer->Remove(g_NetworkServer, true, SH_MEMBER(this, &Duo::OnStartupServer));
+	OnServerGameFrame->Remove(g_Server, false, SH_MEMBER(this, &Duo::OnGameFrame));
 
 	this->Stop();
 
