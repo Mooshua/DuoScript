@@ -5,28 +5,53 @@
 #include <Generic/StringMap.h>
 
 #include "Log.h"
-#include "DuoMetamod.h"
 
 #define AnsiEscape "\x1B["
 
-#define ColorBlack AnsiEscape "30m"
-#define ColorWhite AnsiEscape "34m"
-#define ColorRed AnsiEscape "97m"
-#define ColorOrange AnsiEscape "32m"
-#define ColorYellow AnsiEscape "36m"
-#define ColorLime AnsiEscape "31m"
-#define ColorBrightGreen AnsiEscape "35m"
-#define ColorGreen AnsiEscape "33m"
-#define ColorTeal AnsiEscape "37m"
-#define ColorSky AnsiEscape "90m"
-#define ColorLightBlue AnsiEscape "94m"
-#define ColorBlue AnsiEscape "92m"
-#define ColorIndigo AnsiEscape "96m"
-#define ColorPurple AnsiEscape "91m"
-#define ColorPink AnsiEscape "95m"
-#define ColorRose AnsiEscape "93m"
+#ifndef DUO_INDEPENDENT
 
-#define Reset ColorWhite
+	#define ColorBlack AnsiEscape "30m"
+	#define ColorWhite AnsiEscape "34m"
+	#define ColorRed AnsiEscape "97m"
+	#define ColorOrange AnsiEscape "32m"
+	#define ColorYellow AnsiEscape "36m"
+	#define ColorLime AnsiEscape "31m"
+	#define ColorBrightGreen AnsiEscape "35m"
+	#define ColorGreen AnsiEscape "33m"
+	#define ColorTeal AnsiEscape "37m"
+	#define ColorSky AnsiEscape "90m"
+	#define ColorLightBlue AnsiEscape "94m"
+	#define ColorBlue AnsiEscape "92m"
+	#define ColorIndigo AnsiEscape "96m"
+	#define ColorPurple AnsiEscape "91m"
+	#define ColorPink AnsiEscape "95m"
+	#define ColorRose AnsiEscape "93m"
+
+	#define Reset ColorWhite
+
+#else
+
+	#define ColorBlack AnsiEscape "30m"
+	#define ColorWhite AnsiEscape "97m"
+	#define ColorRed AnsiEscape "91m"
+	#define ColorOrange AnsiEscape "33m"
+	#define ColorYellow AnsiEscape "93m"
+	#define ColorLime AnsiEscape "92m"
+	#define ColorBrightGreen AnsiEscape "32m"
+	#define ColorGreen AnsiEscape "32m"
+	#define ColorTeal AnsiEscape "36m"
+	#define ColorSky AnsiEscape "96m"
+	#define ColorLightBlue AnsiEscape "94m"
+	#define ColorBlue AnsiEscape "34m"
+	#define ColorIndigo AnsiEscape "35m"
+	#define ColorPurple AnsiEscape "35m"
+	#define ColorPink AnsiEscape "95m"
+	#define ColorRose AnsiEscape "31m"
+
+	#define Reset AnsiEscape "0m"
+
+#endif
+
 
 Log g_Log;
 
@@ -85,10 +110,11 @@ void Log::ComponentEx(const char *system, Log::Status status, const char *fmt, v
 			ColorRose "Rose "
 			);
 #endif
-	if (g_Engine == nullptr)
+
+	//if (g_Engine == nullptr)
 		printf("%s",message);
-	else
-		g_Engine->LogPrint(message);
+	//else
+	//	g_Engine->LogPrint(message);
 }
 
 void Log::MessageEx(const char *system, Log::Severity severity, const char *fmt, va_list args)
@@ -102,10 +128,10 @@ void Log::MessageEx(const char *system, Log::Severity severity, const char *fmt,
 	ke::SafeSprintf(message, sizeof(message), Reset "* %s %20s " Reset "| %s\n" ,
 					this->ToString(severity), system, inner_message);
 
-	if (g_Engine == nullptr)
+	//if (g_Engine == nullptr)
 		printf("%s",message);
-	else
-		g_Engine->LogPrint(message);
+	//else
+	//	g_Engine->LogPrint(message);
 }
 
 void Log::TipEx(const char *system, const char *fmt, va_list args)
@@ -121,10 +147,10 @@ void Log::TipEx(const char *system, const char *fmt, va_list args)
 	ke::SafeSprintf(message, sizeof(message), Reset "* %s tip %16s " Reset "| " ColorOrange " %s\n" Reset,
 					tip_thing, system, inner_message);
 
-	if (g_Engine == nullptr)
+	//if (g_Engine == nullptr)
 		printf("%s",message);
-	else
-		g_Engine->LogPrint(message);
+	//else
+	//	g_Engine->LogPrint(message);
 }
 
 const char *Log::ToString(Log::Status status)

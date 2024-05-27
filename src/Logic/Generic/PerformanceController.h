@@ -39,5 +39,6 @@ public:
 	IScriptResult* GetNanoseconds(PerformanceEntity* entity, IScriptCall* call);
 };
 
+extern PerformanceController g_PerformanceController;
 
 #endif //DUOSCRIPT_PERFORMANCECONTROLLER_H

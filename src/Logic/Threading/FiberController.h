@@ -4,10 +4,12 @@
 #define DUOSCRIPT_FIBERCONTROLLER_H
 
 #include <IScriptController.h>
+#include "LogicGlobals.h"
 
 class FiberEntity
 {
 public:
+	FiberEntity() = default;
 	explicit FiberEntity(IFiberHandle* handle)
 	: fiber(handle)
 	{
@@ -16,6 +18,31 @@ public:
 public:
 	IFiberHandle* fiber;
 };
+
+class ThreadResumer
+{
+public:
+	ThreadResumer(IFiberHandle* handle, uint64_t delay)
+	{
+		_handle = handle;
+
+		IDelayHandle* delayer = g_DuoLoop->NewDelay( fastdelegate::MakeDelegate(this, &ThreadResumer::OnResume) );
+		delayer->TryDelay(delay);
+	}
+
+	void OnResume(IDelayHandle* arg)
+	{
+		if (_handle->Exists())
+			_handle->Get()->Call(false);
+
+		delete _handle;
+		delete arg;
+		delete this;
+	}
+
+	IFiberHandle* _handle;
+};
+
 
 class FiberController : public IScriptController<FiberEntity>
 {
@@ -26,6 +53,7 @@ public:
 
 		CONTROLLER_STATIC_METHOD(New, &FiberController::New);
 		CONTROLLER_STATIC_METHOD(Await, &FiberController::Await);
+		CONTROLLER_STATIC_METHOD(Sleep, &FiberController::Sleep);
 
 		CONTROLLER_METHOD(Resume, &FiberController::Resume);
 	}
@@ -33,6 +61,8 @@ public:
 public:
 	IScriptResult* New(IScriptCall* args);
 	IScriptResult* Await(IScriptCall* args);
+
+	IScriptResult* Sleep(IScriptCall* args);
 
 	IScriptResult* Resume(FiberEntity* entity, IScriptCall* args);
 };

@@ -1,9 +1,11 @@
 // Copyright (c) 2024 Mooshua. All rights reserved.
 
-#include <utility>
 #include "ScriptFiber.h"
 #include "ScriptCall.h"
 #include "ScriptObject.h"
+
+#include <amtl/am-platform.h>
+#include <utility>
 
 ScriptCall::ScriptCall(ScriptFiber* parent)
 {
@@ -25,6 +27,7 @@ void *ScriptCall::GetOpaqueSelf()
 
 void ScriptCall::SetupCall(int argc)
 {
+	this->has_self = true;
 	this->stack_push = argc;
 	this->result.strategy = ScriptResult::Invalid;
 	this->stack_pop = 0;
@@ -33,6 +36,7 @@ void ScriptCall::SetupCall(int argc)
 
 void ScriptCall::SetupReturn(int argc, int status)
 {
+	this->has_self = false;
 	this->last_status = status;
 
 	this->stack_push = argc;
@@ -62,7 +66,7 @@ bool ScriptCall::TryGetNamecall(char *result, int maxlen)
 	{                                              \
 		if (slot > stack_push)						   \
 			return false;                                \
-        slot++; /* Remove self pointer */                  \
+        slot += this->has_self; /* Remove self pointer */  \
 		if (! check ( this->parent->L , slot )) \
 			return false;                                \
 		if (result == nullptr) 						\
@@ -97,7 +101,7 @@ bool ScriptCall::ArgObject(int slot, IScriptRef** result)
 	if (slot > stack_push)
 		return false;
 
-	slot++;
+	slot += this->has_self;
 
 	if (result == nullptr)
 		return true;
@@ -121,7 +125,7 @@ bool ScriptCall::ArgString(int slot, char* result, int maxlen, int* written)
 	if (slot > stack_push)
 		return false;
 
-	slot++;
+	slot += this->has_self;
 
 	if (!lua_isstring( this->parent->L , slot ))
 		return false;
@@ -132,7 +136,7 @@ bool ScriptCall::ArgString(int slot, char* result, int maxlen, int* written)
 	size_t length;
 	const char* str = lua_tolstring(this->parent->L, slot, &length);
 
-	if (length == 0 || str == nullptr)
+	if (length == 0 || str == nullptr || maxlen <= length)
 		return false;
 
 	if (written != nullptr)
@@ -141,6 +145,24 @@ bool ScriptCall::ArgString(int slot, char* result, int maxlen, int* written)
 	strcpy_s(result, maxlen, str);
 	return true;
 }
+
+bool ScriptCall::ArgString(int slot, std::string *result)
+{
+	if (slot > stack_push)
+		return false;
+
+	slot += this->has_self;
+
+	if (!lua_isstring( this->parent->L , slot ))
+		return false;
+
+	size_t length;
+	const char* str = lua_tolstring(this->parent->L, slot, &length);
+
+	result->append(str, length);
+	return true;
+}
+
 
 void ScriptCall::PushString(const char *value, int length)
 {
@@ -167,14 +189,20 @@ IFiberHandle *ScriptCall::GetFiber()
 
 IScriptResult *ScriptCall::Error(const char *error, ...)
 {
+	//	When debugging, it can be difficult to tell where
+	//	an error comes from if this is not breakpointed.
+	//	Place a breakpoint somewhere in here to see where
+	//	the error is actually called, and not to get
+	//	the result from the FastDelegate invocation.
+
 	va_list args;
 	va_start(args, error);
-
-	//	Push error string onto stack
-	lua_pushvfstring(this->parent->L, error, args);
-	//	lua_pushstring(this->parent->L, error);
-	result.strategy = ScriptResult::Error;
-
+	{
+		//	Push error string onto stack
+		lua_pushvfstring(this->parent->L, error, args);
+		//	lua_pushstring(this->parent->L, error);
+		result.strategy = ScriptResult::Error;
+	}
 	va_end(args);
 
 	return &result;
@@ -199,7 +227,7 @@ bool ScriptCall::ArgMethod(int slot, IScriptMethod **result)
 	if (slot > stack_push)
 		return false;
 
-	slot++;
+	slot += this->has_self;
 
 	if (!lua_isfunction( this->parent->L , slot ))
 		return false;
@@ -218,7 +246,7 @@ bool ScriptCall::ArgTable(int slot, IScriptObject **result)
 	if (slot > stack_push)
 		return false;
 
-	slot++;
+	slot += this->has_self;
 
 	if (!lua_istable( this->parent->L , slot ))
 		return false;
@@ -238,7 +266,7 @@ bool ScriptCall::ArgBuffer(int slot, void **result, size_t *size)
 	if (slot > stack_push)
 		return false;
 
-	slot++;
+	slot += this->has_self;
 
 	if (!lua_isbuffer( this->parent->L , slot ))
 		return false;
@@ -252,6 +280,24 @@ bool ScriptCall::ArgBuffer(int slot, void **result, size_t *size)
 	return true;
 }
 
+bool ScriptCall::ArgBuffer(int slot, std::string *result)
+{
+	if (slot > stack_push)
+		return false;
+
+	slot += this->has_self;
+
+	if (!lua_isbuffer( this->parent->L , slot ))
+		return false;
+
+	size_t size;
+	char* buffer = static_cast<char *>(lua_tobuffer(this->parent->L, slot, &size));
+
+	result->append(buffer, size);
+	return true;
+}
+
+
 void ScriptCall::PushVarArgs(IScriptPolyglotView *from, int after)
 {
 	ScriptCall* friend_from = static_cast<ScriptCall *>( from->ToPolyglot() );
@@ -260,7 +306,7 @@ void ScriptCall::PushVarArgs(IScriptPolyglotView *from, int after)
 	for (int arg = after; arg < friend_from->GetLength(); arg++)
 	{
 		//	Use xpush to toss across lua_states
-		lua_xpush(friend_from->parent->L, this->parent->L, arg + 1);
+		lua_xpush(friend_from->parent->L, this->parent->L, arg + friend_from->has_self);
 		stack_pop++;
 
 		/*
@@ -283,7 +329,7 @@ void ScriptCall::PushArg(IScriptPolyglotView *from, int arg)
 	//	if (arg > from->GetLength())
 	//		return;
 
-	lua_xpush(friend_from->parent->L, this->parent->L, arg + 1);
+	lua_xpush(friend_from->parent->L, this->parent->L, arg + friend_from->has_self);
 	stack_pop++;
 }
 
@@ -332,3 +378,5 @@ IScriptPolyglot *ScriptCall::ToPolyglot()
 {
 	return this;
 }
+
+

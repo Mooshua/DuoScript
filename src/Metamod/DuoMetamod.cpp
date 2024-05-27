@@ -9,8 +9,8 @@
 #include "IModule.h"
 #include "Modules/ModuleManager.h"
 
-#include <amtl/am-string.h>
-#include <amtl/am-platform.h>
+#include "amtl/am-string.h"
+#include "amtl/am-platform.h"
 
 IVEngineServer2 *g_Engine;
 ISource2Server *g_Server;

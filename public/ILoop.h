@@ -47,6 +47,33 @@ public:
 	virtual uint64_t Remaining() = 0;
 };
 
+class ITask
+{
+public:
+	fastdelegate::FastDelegate<void*, void*> _processor =
+		fastdelegate::MakeDelegate(this, &ITask::OnExecute);
+
+	fastdelegate::FastDelegate<void, void*, void*> _finalizer =
+			fastdelegate::MakeDelegate(this, &ITask::OnFinalize);
+
+	virtual ~ITask() = default;
+protected:
+	void* OnExecute(void* input)
+	{
+		this->Execute();
+		return nullptr;
+	}
+
+	void OnFinalize(void* input, void* output)
+	{
+		this->Finish();
+		delete this;
+	}
+
+protected:
+	virtual void Execute() = 0;
+	virtual void Finish() = 0;
+};
 
 class ILoop
 {
@@ -73,12 +100,14 @@ public:
 	///	Schedule a work item to execute on another thread, off of the game thread.
 	///	!! THIS IS UNSAFE !! - Once execution of the receiver has finished,
 	///	this handle will be freed! Avoid using unless you really need it.
-	virtual IBaseHandle* NewWorkUnsafe(void* work, WorkProcessor processor, WorkReceiver receiver) = 0;
+	///	If emulate is true--The work will be ran synchronously, but it will be emulated
+	///	as async.
+	virtual IBaseHandle* NewWorkUnsafe(void* work, WorkProcessor processor, WorkReceiver receiver, bool emulate) = 0;
 
 	///	Schedule a work item to execute on another thread, off of the game thread.
-	void NewWork(void* work, WorkProcessor processor, WorkReceiver receiver)
+	void NewWork(void* work, WorkProcessor processor, WorkReceiver receiver, bool emulate = false)
 	{
-		this->NewWorkUnsafe(work, processor, receiver);
+		this->NewWorkUnsafe(work, processor, receiver, emulate);
 	}
 
 	///	Schedule a work item to execute on another thread, off of the game thread.
@@ -87,9 +116,15 @@ public:
 	inline void NewTypedWork(
 		Input* work,
 		fastdelegate::FastDelegate<Output*, IBaseHandle*, Input*> processor,
-		fastdelegate::FastDelegate<void, IBaseHandle*, Input*, Output*> receiver)
+		fastdelegate::FastDelegate<void, IBaseHandle*, Input*, Output*> receiver,
+		bool emulate = false)
 	{
-		return this->NewWork(work, processor, receiver);
+		return this->NewWork(work, processor, receiver, emulate);
+	}
+
+	inline void NewTask(ITask* task, bool emulate = false)
+	{
+		return this->NewWork(nullptr, task->_processor, task->_finalizer, emulate);
 	}
 };
 

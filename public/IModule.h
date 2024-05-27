@@ -17,6 +17,7 @@ class IDuoServices
 {
 public:
 	virtual IScriptControllerManager* ScriptController() = 0;
+	virtual ILoop* Loop() = 0;
 };
 
 class IModule : public virtual ISmmPlugin
@@ -67,6 +68,7 @@ public:
 	class classname; \
 	PLUGIN_GLOBALVARS()         \
     extern IDuoServices* g_Duo; \
+    extern ILoop* g_DuoLoop;                          \
     extern ILogger* g_DuoLog;                          \
     extern classname g_##classname; \
 	class classname : public virtual IModule
@@ -121,11 +123,15 @@ public:
 #define MODULE_INIT(classname) \
 	PLUGIN_EXPOSE(classname, g_##classname)      \
     IDuoServices* g_Duo;       \
-	ILogger* g_DuoLog;         \
+	ILogger* g_DuoLog;            \
+    ILoop* g_DuoLoop;                           \
     classname g_##classname; 	\
                                \
 	void classname :: DuoLoad(IDuoServices* services) \
-	{ g_Duo = services; }      \
+	{                             \
+		g_Duo = services;            \
+		g_DuoLoop = services->Loop();\
+	}      \
                                \
 	MODULE_IMPL_LOAD(classname)   \
 	MODULE_IMPL_UNLOAD(classname)

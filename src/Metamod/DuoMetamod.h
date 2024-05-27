@@ -3,14 +3,14 @@
 #ifndef DUOSCRIPT_DUOMETAMOD_H
 #define DUOSCRIPT_DUOMETAMOD_H
 
-#include <uv.h>
+#include "uv.h"
 
-#include <ISmmPlugin.h>
-#include <ISmmAPI.h>
+#include "ISmmPlugin.h"
+#include "ISmmAPI.h"
 
-#include <interfaces/interfaces.h>
-#include <eiface.h>
-#include <filesystem.h>
+#include "interfaces/interfaces.h"
+#include "eiface.h"
+#include "filesystem.h"
 
 #include "Core/Loop/Loop.h"
 #include "Script/ScriptVM.h"

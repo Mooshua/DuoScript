@@ -1,8 +1,9 @@
 // Copyright (c) 2024 Mooshua. All rights reserved.
 
 #include "FileSystemController.h"
-#include "Logging/Log.h"
-#include "Loop/Loop.h"
+#include "LogicGlobals.h"
+
+FileController g_FileController;
 
 void FileRequest::Callback(uv_fs_t *req)
 {
@@ -11,7 +12,7 @@ void FileRequest::Callback(uv_fs_t *req)
 	if (!self->fiber->Exists())
 	{
 		delete self;
-		return g_Log.Message("Filesystem", Log::SEV_WARN, "Fiber handle closed while yielding for filesystem");
+		return g_DuoLog->Message("Filesystem", ILogger::SEV_WARN, "Fiber handle closed while yielding for filesystem");
 	}
 
 	IScriptFiber* fiber = self->fiber->Get();
@@ -20,7 +21,7 @@ void FileRequest::Callback(uv_fs_t *req)
 	if (!fiber->TryContinue(&args))
 	{
 		delete self;
-		return g_Log.Message("Filesystem", Log::SEV_WARN, "Fiber handle could not be resumed from filesystem yield");
+		return g_DuoLog->Message("Filesystem", ILogger::SEV_WARN, "Fiber handle could not be resumed from filesystem yield");
 	}
 
 	//	"Success" return
@@ -43,7 +44,7 @@ void FileOpenRequest::Callback(uv_fs_t *req)
 	if (!self->fiber->Exists())
 	{
 		delete self;
-		return g_Log.Message("Filesystem", Log::SEV_WARN, "Fiber handle closed while yielding for filesystem open");
+		return g_DuoLog->Message("Filesystem", ILogger::SEV_WARN, "Fiber handle closed while yielding for filesystem open");
 	}
 
 	IScriptFiber* fiber = self->fiber->Get();
@@ -52,7 +53,7 @@ void FileOpenRequest::Callback(uv_fs_t *req)
 	if (!fiber->TryContinue(&args))
 	{
 		delete self;
-		return g_Log.Message("Filesystem", Log::SEV_WARN, "Fiber handle could not be resumed from filesystem open yield");
+		return g_DuoLog->Message("Filesystem", ILogger::SEV_WARN, "Fiber handle could not be resumed from filesystem open yield");
 	}
 
 	bool success = (req->result >= 0);
@@ -89,7 +90,7 @@ IScriptResult *FileController::Open(IScriptCall *call)
 		call->Error("Expected argument 1 to be a string!");
 
 	FileOpenRequest* request = new FileOpenRequest(call->GetFiber(), this);
-	uv_fs_open(&g_Loop.loop, &request->request, path, UV_FS_O_RDWR | UV_FS_O_CREAT, 0, &FileOpenRequest::Callback);
+	uv_fs_open(g_DuoLoop->AsLoop(), &request->request, path, UV_FS_O_RDWR | UV_FS_O_CREAT, 0, &FileOpenRequest::Callback);
 
 	return call->Await();
 }
@@ -117,7 +118,7 @@ IScriptResult *FileController::Read(FileEntity *file, IScriptCall *call)
 	request->buffer.len	= length;
 
 	//	Queue read request & yield for callback
-	uv_fs_read(&g_Loop.loop, &request->request, file->file, &request->buffer, 1, offset, &FileRequest::Callback);
+	uv_fs_read(g_DuoLoop->AsLoop(), &request->request, file->file, &request->buffer, 1, offset, &FileRequest::Callback);
 	return call->Await();
 }
 
@@ -145,7 +146,7 @@ IScriptResult *FileController::Write(FileEntity* file, IScriptCall *call)
 
 	memcpy(request->buffer.base, buffer, length);
 
-	uv_fs_write(&g_Loop.loop, &request->request, file->file, &request->buffer, 1, offset, &FileRequest::Callback);
+	uv_fs_write(g_DuoLoop->AsLoop(), &request->request, file->file, &request->buffer, 1, offset, &FileRequest::Callback);
 	return call->Await();
 }
 

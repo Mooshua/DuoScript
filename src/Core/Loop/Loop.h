@@ -7,7 +7,7 @@
 
 #include "ILoop.h"
 
-class Loop : public ILoop
+class Loop : public virtual ILoop
 {
 public:
 	///	Initialize libuv
@@ -19,7 +19,7 @@ public:
 	uv_loop_t* AsLoop() override;
 	IAsyncHandle* NewAsync(ILoop::Async callback) override;
 	IDelayHandle* NewDelay(ILoop::Delay callback) override;
-	IBaseHandle* NewWorkUnsafe(void* work, WorkProcessor processor, WorkReceiver receiver) override;
+	IBaseHandle* NewWorkUnsafe(void* work, WorkProcessor processor, WorkReceiver receiver, bool emulate) override;
 
 public:
 	//	Run one frame

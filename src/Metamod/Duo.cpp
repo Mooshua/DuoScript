@@ -4,12 +4,16 @@
 #include "Duo.h"
 #include "Plugins/PluginManager.h"
 #include "Modules/ModuleManager.h"
-#include <sourcehook.h>
+#include "sourcehook/sourcehook.h"
+
+#include "AwesomeHook/AwesomeHook.h"
 
 Duo* g_Duo;
 
 SH_DECL_HOOK3_void(INetworkServerService, StartupServer, SH_NOATTRIB, 0, const GameSessionConfiguration_t&, ISource2WorldSession*, const char*);
 SH_DECL_HOOK3_void(ISource2Server, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
+
+auto GameFrameHook = SourceHook::Hook<&g_SHPtr, ISource2Server, &ISource2Server::GameFrame, void, bool, bool, bool>::Make();
 
 Duo::Duo(bool late)
 {
@@ -17,6 +21,8 @@ Duo::Duo(bool late)
 	SH_ADD_HOOK(ISource2Server, GameFrame, g_Server, SH_MEMBER(this, &Duo::OnGameFrame), false);
 
 	g_Log.Component("Duo Hooks", Log::STAT_GOOD, "Started");
+
+	GameFrameHook->Add(g_PLID, g_Server, false, SH_MEMBER(this, &Duo::OnGameFrame));
 
 	_started = false;
 

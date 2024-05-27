@@ -19,7 +19,6 @@ public:
 
 	bool TryLoad(char* error, int maxlen);
 
-	bool TryGetCodeResource(const char* name, std::string* results);
 
 	void Start();
 
@@ -31,9 +30,11 @@ public:	//	IPlugin
 
 public:	//	IPluginResources
 	virtual bool TryGetResource(const char* name, std::string* results);
+	virtual bool TryGetCodeResource(const char* name, std::string* results);
 
 	///	Get a list of resources contained in this plugin
 	virtual void GetResources(std::vector<const char*>* names, const char* search = nullptr);
+
 
 protected:
 

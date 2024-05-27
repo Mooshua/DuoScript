@@ -34,8 +34,8 @@ public:
 	///	used to run code in a pseudosandbox.
 	lua_State* CreateBox(IScriptRef** box_ref);
 
-	IScriptIsolate* CreateIsolate() override;
-	ScriptIsolate* CreateIsolateInternal();
+	IScriptIsolate* CreateIsolate(IIsolateResources* resources) override;
+	ScriptIsolate* CreateIsolateInternal(IIsolateResources* resources);
 
 	ScriptIsolate* GetIsolate(int id);
 
@@ -51,6 +51,7 @@ public:
 
 protected:
 	static int DisableStandardLibraryMethod(lua_State *L);
+	static int LuaRequire(lua_State *L);
 	static int CFunction(lua_State *L);
 	static void* Alloc(void* userdata, void* pointer, size_t oldside, size_t newsize);
 
@@ -71,7 +72,7 @@ class ScriptIsolate : public IScriptIsolate
 	friend class ScriptVM;
 	friend class ScriptFiber;
 public:
-	explicit ScriptIsolate(ScriptVM* parent);
+	explicit ScriptIsolate(ScriptVM* parent, IIsolateResources* resources);
 
 	~ScriptIsolate();
 
@@ -83,6 +84,8 @@ public:
 	///	false and writes to *error on failure.
 	virtual bool TryLoad(const char* name, std::string data, IScriptMethod **method, char* error, int maxlength);
 
+	IIsolateResources* GetResources() override;
+
 	IScriptFiber* NewFiber() final;
 
 	ScriptFiber* GetFiber(int id);
@@ -90,6 +93,7 @@ public:
 public:
 	lua_State *L;
 protected:
+	IIsolateResources* _resources;
 	ScriptVM* _parent;
 	std::vector<ScriptFiber*> _fibers;
 

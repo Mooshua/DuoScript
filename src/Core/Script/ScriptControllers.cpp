@@ -63,10 +63,6 @@ IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* co
 			lua_setreadonly(L, -1, true);
 			int staticMetatable = lua_ref(L, -1);
 		lua_setmetatable(L, -2);
-	lua_pop(L, 1);
-
-	//	little cha-cha slide here
-	lua_getref(L, staticMetatable);
 	lua_setglobal(L, controller->GetName());
 
 	//	=====================================

@@ -64,6 +64,10 @@ public:
 	//	The last status provided to us from lua.
 	//	set in SetupReturn().
 	int last_status;
+
+	//	1 when we have a self variable
+	//	used for arg shuffling shenanigans
+	int has_self;
 public:
 	virtual IScriptPolyglot* ToPolyglot();
 
@@ -92,6 +96,7 @@ public:
 
 	bool ArgBool(int slot, bool *result) override;
 	bool ArgString(int slot, char* result, int maxlen, int* written) override;
+	bool ArgString(int slot, std::string* result) override;
 	bool ArgObject(int slot, IScriptRef** result) override;
 	bool ArgNumber(int slot, double* result) override;
 	bool ArgInt(int slot, int* result) override;
@@ -100,6 +105,7 @@ public:
 	bool ArgMethod(int slot, IScriptMethod** result) override;
 	bool ArgTable(int slot, IScriptObject** result) override;
 	bool ArgBuffer(int slot, void** result, size_t* size) override;
+	bool ArgBuffer(int slot, std::string* result) override;
 
 	void PushBool(bool value) override;
 	void PushString(const char* value, int length) override;

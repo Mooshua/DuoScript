@@ -108,4 +108,6 @@ public:
 
 };
 
+extern FileController g_FileController;
+
 #endif //DUOSCRIPT_FILESYSTEMCONTROLLER_H

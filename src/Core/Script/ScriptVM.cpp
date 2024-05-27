@@ -36,9 +36,11 @@ lua_State* ScriptVM::CreateBox(IScriptRef** box_ref)
 	return thread;
 }
 
-ScriptIsolate::ScriptIsolate(ScriptVM *parent)
+ScriptIsolate::ScriptIsolate(ScriptVM *parent, IIsolateResources* resources)
 {
 	_parent = parent;
+	_resources = resources;
+
 	//	Create the box that this isolate will run in
 	L = _parent->CreateBox(&this->thread_reference);
 
@@ -126,6 +128,11 @@ IsolateHandle *ScriptIsolate::ToHandleInternal()
 IIsolateHandle *ScriptIsolate::ToHandle()
 {
 	return this->ToHandleInternal();
+}
+
+IIsolateResources *ScriptIsolate::GetResources()
+{
+	return this->_resources;
 }
 
 void *ScriptVM::Alloc(void *userdata, void *pointer, size_t oldsize, size_t newsize)
@@ -232,6 +239,8 @@ void ScriptVM::Initialize()
 			{"coroutine.create", &ScriptVM::DisableStandardLibraryMethod },
 			{"coroutine.wrap", &ScriptVM::DisableStandardLibraryMethod },
 			{"coroutine.running", &ScriptVM::DisableStandardLibraryMethod },
+
+			{"require", &ScriptVM::LuaRequire},
 			{ NULL, NULL },
 	};
 
@@ -259,14 +268,14 @@ int ScriptVM::DisableStandardLibraryMethod(lua_State *L)
 	return 0;
 }
 
-IScriptIsolate *ScriptVM::CreateIsolate()
+IScriptIsolate *ScriptVM::CreateIsolate(IIsolateResources* resources)
 {
-	return this->CreateIsolateInternal();
+	return this->CreateIsolateInternal(resources);
 }
 
-ScriptIsolate *ScriptVM::CreateIsolateInternal()
+ScriptIsolate *ScriptVM::CreateIsolateInternal(IIsolateResources* resources)
 {
-	ScriptIsolate* isolate = new ScriptIsolate(this);
+	ScriptIsolate* isolate = new ScriptIsolate(this, resources);
 	_isolates.push_back(isolate);
 
 	//	Tell the isolate what their index is in the
@@ -274,5 +283,42 @@ ScriptIsolate *ScriptVM::CreateIsolateInternal()
 	isolate->isolate_id = _isolates.size() - 1;
 
 	return isolate;
+}
+
+int ScriptVM::LuaRequire(lua_State *L)
+{
+	std::string originalName = luaL_checkstring(L, -1);
+	std::replace( originalName.begin(), originalName.end(), '.', '/');
+
+	std::string name = ke::StringPrintf("%s.luau", originalName.c_str());
+
+
+	ScriptFiber* fiber = static_cast<ScriptFiber *>(lua_getthreaddata(L));
+	ScriptIsolate* isolate = fiber->parent;
+	IIsolateResources* resources = isolate->GetResources();
+
+	std::string file;
+	if (!resources->TryGetCodeResource(name.c_str(), &file))
+		luaL_error(L, "Failed to get resource %s: %s", name.c_str(), file.c_str());
+
+	char error[512];
+	IScriptMethod* method;
+
+	if (!isolate->TryLoad(name.c_str(), file, &method, error, sizeof(error)))
+		luaL_error(L, "Error loading plugin %s: %s", name.c_str(), error);
+
+	//	Create a fiber to run the loader
+	IScriptFiber* newFiber = isolate->NewFiber();
+	newFiber->TrySetup(method);
+	IScriptReturn* result = newFiber->Call(true);
+
+	IScriptRef* module;
+	if (!result->ArgObject(1, &module))
+		luaL_error(L, "Module %s must return exactly one value!", name.c_str());
+
+	lua_getref(L, module->AsReferenceId());
+
+	delete newFiber;
+	return 1;
 }
 

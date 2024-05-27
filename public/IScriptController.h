@@ -95,6 +95,13 @@ public:
 	virtual void* GetEntity() = 0;
 };
 
+//	Dummy entity for people who don't want an entity
+//	(static controllers)
+class NoEntity
+{
+
+};
+
 template<typename Entity>
 class IScriptControllerEntity : IBaseScriptControllerEntity
 {
@@ -103,6 +110,12 @@ public:
 		: _instance(instance)
 		, _controller(controller)
 	{}
+	void Initialize(IControllerInstance* instance, IBaseScriptController* controller)
+	{
+		this->_instance = instance;
+		this->_controller = controller;
+	}
+
 	IControllerInstance* GetInstance() final { return _instance; }
 	IBaseScriptController* GetController() final { return _controller; }
 	void* GetEntity() final { return &_entity; }
@@ -121,7 +134,7 @@ private:
 ///	A script controller handles requests for
 ///	entities in the script world. Entities hold the state,
 ///	while controllers process requests for the entity.
-template<typename Entity>
+template<typename Entity = NoEntity>
 class IScriptController : public virtual IBaseScriptController
 {
 
@@ -153,8 +166,12 @@ protected:
 		Userdata* userdata;
 		IScriptRef* entity = _template->Make(call->GetIsolate(), &userdata);
 
-		//	Todo: Verify copy works well here
-		*userdata->AsEntity() = *value;
+		//	Welcome to another episode of "C++ sucks ass"
+		//	Because of stupid "smart" objects trying to
+		//	get their greasy, knobby little hands into uninitialized memory,
+		//	we have to do THIS bullshit. It's called a "placement constructor".
+		userdata->Initialize(_template, this);
+		new (userdata->AsEntity()) Entity(*value);
 
 		call->PushObject(entity);
 		return call->Return();
@@ -168,7 +185,8 @@ protected:
 		Userdata* userdata;
 		IScriptRef* entity = _template->Make(call->GetIsolate(), &userdata);
 
-		*userdata->AsEntity() = *value;
+		userdata->Initialize(_template, this);
+		new (userdata->AsEntity()) Entity(*value);
 
 		return entity;
 	}
@@ -224,10 +242,6 @@ protected:
 
 	IScriptResult* Index(IScriptCall* index)
 	{
-		Entity* self = index->GetSelf<Entity>();
-		if (self == nullptr)
-			return index->Error("Invalid __index invocation (null entity)");
-
 		char key[256];
 		if (!index->ArgString(1, key, sizeof(key)))
 			return index->Error("Cannot find key %s", key);
@@ -235,6 +249,10 @@ protected:
 		auto lookup = _entityGet.find(key);
 		if (!lookup.found())
 			return index->Error("Could not find key '%s' in type %s", key, _name);
+
+		Entity* self = index->GetSelf<Userdata>()->AsEntity();
+		if (self == nullptr)
+			return index->Error("Invalid __index invocation (null entity)");
 
 		Getter get = lookup->value;
 		return get(self, index);
@@ -254,7 +272,7 @@ protected:
 
 		MethodCallback method = lookup->value;
 
-		Entity* self = namecall->GetSelf<Entity>();
+		Entity* self = namecall->GetSelf<Userdata>()->AsEntity();
 		if (self == nullptr)
 			return namecall->Error("null entity");
 

@@ -7,15 +7,19 @@
 #include <string>
 #include <FastDelegate.h>
 
+#include <IScript.h>
 
-class IPluginResources
+class IPluginResources : public IIsolateResources
 {
-public:
+public:	// IIsolateResources
 	///	Get the resource file with the specified name
 	///	Writes an error string when returning false.
 	///	You own the returned buffer--make sure to free it!
 	virtual bool TryGetResource(const char* name, std::string* results) = 0;
 
+	virtual bool TryGetCodeResource(const char *name, std::string *results) = 0;
+
+public:
 	///	Get a list of resources contained in this plugin
 	virtual void GetResources(std::vector<const char*>* names, const char* search = nullptr) = 0;
 };

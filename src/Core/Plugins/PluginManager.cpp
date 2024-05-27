@@ -3,7 +3,6 @@
 #include "PluginManager.h"
 #include "Helpers/Path.h"
 #include "Logging/Log.h"
-#include "DuoMetamod.h"
 #include "Files/Files.h"
 
 PluginManager g_PluginManager;

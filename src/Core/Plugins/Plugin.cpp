@@ -17,7 +17,7 @@ Plugin::Plugin(const char *path, PluginManager* parent, int id)
 	this->_id = id;
 
 	this->_file = zip_open(path, 0, 'r');
-	this->_isolate = g_ScriptVM.CreateIsolateInternal();
+	this->_isolate = g_ScriptVM.CreateIsolateInternal(this);
 
 	this->_loaded = false;
 	this->_entryMethod = nullptr;

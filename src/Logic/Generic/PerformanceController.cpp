@@ -2,6 +2,9 @@
 
 #include "PerformanceController.h"
 
+PerformanceController g_PerformanceController;
+
+
 IScriptResult *PerformanceController::Start(PerformanceEntity *entity, IScriptCall *call)
 {
 	entity->started = true;

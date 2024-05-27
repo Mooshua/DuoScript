@@ -32,12 +32,17 @@ public:
 	virtual int GetLength() = 0;
 
 	virtual bool ArgBool(int slot, bool *result) = 0;
-	virtual bool ArgString(int slot, char* result, int maxlen, int* written = nullptr) = 0;
+
 	virtual bool ArgObject(int slot, IScriptRef** result) = 0;
 	virtual bool ArgNumber(int slot, double* result) = 0;
 	virtual bool ArgInt(int slot, int* result) = 0;
 	virtual bool ArgUnsigned(int slot, unsigned* result) = 0;
+
+	virtual bool ArgString(int slot, char* result, int maxlen, int* written = nullptr) = 0;
+	virtual bool ArgString(int slot, std::string* result) = 0;
+
 	virtual bool ArgBuffer(int slot, void** result, size_t* size) = 0;
+	virtual bool ArgBuffer(int slot, std::string* result) = 0;
 
 	//	Get a method passed as an argument.
 	//	Note that this can have upvalues and state--so don't send us

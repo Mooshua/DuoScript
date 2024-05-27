@@ -1,0 +1,117 @@
+struct __SourceHook_FHCls_ISource2ServerGameFrame0
+{
+	static __SourceHook_FHCls_ISource2ServerGameFrame0 ms_Inst;
+	static ::SourceHook::MemFuncInfo ms_MFI;
+	static ::SourceHook::IHookManagerInfo *ms_HI;
+	static ::SourceHook::ProtoInfo ms_Proto;
+	static int HookManPubFunc(bool store, ::SourceHook::IHookManagerInfo *hi)
+	{
+		using namespace ::SourceHook;
+		GetFuncInfo((static_cast<void (ISource2Server::*)(bool, bool, bool)>(&ISource2Server::GameFrame)), ms_MFI);
+		if (g_SHPtr->GetIfaceVersion() != 5)return 1;
+		if (g_SHPtr->GetImplVersion() < 5)return 1;
+		if (store)ms_HI = hi;
+		if (hi) {
+			MemFuncInfo mfi = {true, -1, 0, 0};
+			GetFuncInfo(&__SourceHook_FHCls_ISource2ServerGameFrame0::Func, mfi);
+			hi->SetInfo(1, ms_MFI.vtbloffs, ms_MFI.vtblindex, &ms_Proto,
+						reinterpret_cast<void **>(reinterpret_cast<char *>(&ms_Inst) + mfi.vtbloffs)[mfi.vtblindex]);
+		}
+		return 0;
+	}
+	typedef fastdelegate::FastDelegate<void, bool, bool, bool> FD;
+	struct IMyDelegate:: : SourceHook::ISHDelegate
+	{
+		virtual void Call(bool p1, bool p2, bool p3) = 0;
+	};
+	struct CMyDelegateImpl : IMyDelegate
+	{
+		FD m_Deleg;
+		CMyDelegateImpl(FD deleg) : m_Deleg(deleg)
+		{}
+		virtual~CMyDelegateImpl()
+		{}
+		void Call(bool p1, bool p2, bool p3)
+		{ m_Deleg(p1, p2, p3); }
+		void DeleteThis()
+		{ delete this; }
+		bool IsEqual(ISHDelegate *pOtherDeleg)
+		{ return m_Deleg == static_cast<CMyDelegateImpl *>(pOtherDeleg)->m_Deleg; }
+	};;
+	virtual void Func(bool p1, bool p2, bool p3)
+	{
+		using namespace ::SourceHook;
+		void *ourvfnptr = reinterpret_cast<void *>(
+				*reinterpret_cast<void ***>(reinterpret_cast<char *>(this) + ms_MFI.vtbloffs) + ms_MFI.vtblindex);
+		void *vfnptr_origentry;
+		META_RES status = MRES_IGNORED;
+		META_RES prev_res;
+		META_RES cur_res;
+		IMyDelegate *iter;
+		IHookContext *pContext = g_SHPtr->SetupHookLoop(ms_HI, ourvfnptr, reinterpret_cast<void *>(this),
+														&vfnptr_origentry, &status, &prev_res, &cur_res, 0, 0);
+		prev_res = MRES_IGNORED;
+		while ((iter = static_cast<IMyDelegate *>(pContext->GetNext()))) {
+			cur_res = MRES_IGNORED;
+			iter->Call(p1, p2, p3);
+			prev_res = cur_res;
+			if (cur_res > status)status = cur_res;
+		}
+		if (status != MRES_SUPERCEDE && pContext->ShouldCallOrig()) {
+			void (EmptyClass::*mfp)(bool, bool, bool);
+			reinterpret_cast<void **>(&mfp)[0] = vfnptr_origentry;;
+			(reinterpret_cast<EmptyClass *>(this)->*mfp)(p1, p2, p3);
+		}
+		prev_res = MRES_IGNORED;
+		while ((iter = static_cast<IMyDelegate *>(pContext->GetNext()))) {
+			cur_res = MRES_IGNORED;
+			iter->Call(p1, p2, p3);
+			prev_res = cur_res;
+			if (cur_res > status)status = cur_res;
+		}
+		g_SHPtr->EndContext(pContext);;
+	}
+};
+__SourceHook_FHCls_ISource2ServerGameFrame0 __SourceHook_FHCls_ISource2ServerGameFrame0::ms_Inst;
+::SourceHook::MemFuncInfo __SourceHook_FHCls_ISource2ServerGameFrame0::ms_MFI;
+::SourceHook::IHookManagerInfo *__SourceHook_FHCls_ISource2ServerGameFrame0::ms_HI;
+int __SourceHook_FHAddISource2ServerGameFrame(void *iface, ::SourceHook::ISourceHook::AddHookMode mode, bool post,
+											  __SourceHook_FHCls_ISource2ServerGameFrame0::FD handler)
+{
+	using namespace ::SourceHook;
+	MemFuncInfo mfi = {true, -1, 0, 0};
+	GetFuncInfo((static_cast<void (ISource2Server::*)(bool, bool, bool)>(&ISource2Server::GameFrame)), mfi);
+	if (mfi.thisptroffs < 0 || !mfi.isVirtual)return false;
+	return g_SHPtr->AddHook(g_PLID, mode, iface, mfi.thisptroffs,
+							__SourceHook_FHCls_ISource2ServerGameFrame0::HookManPubFunc,
+							new __SourceHook_FHCls_ISource2ServerGameFrame0::CMyDelegateImpl(handler), post);
+}
+bool __SourceHook_FHRemoveISource2ServerGameFrame(void *iface, bool post,
+												  __SourceHook_FHCls_ISource2ServerGameFrame0::FD handler)
+{
+	using namespace ::SourceHook;
+	MemFuncInfo mfi = {true, -1, 0, 0};
+	GetFuncInfo((static_cast<void (ISource2Server::*)(bool, bool, bool)>(&ISource2Server::GameFrame)), mfi);
+	__SourceHook_FHCls_ISource2ServerGameFrame0::CMyDelegateImpl tmp(handler);
+	return g_SHPtr->RemoveHook(g_PLID, iface, mfi.thisptroffs,
+							   __SourceHook_FHCls_ISource2ServerGameFrame0::HookManPubFunc, &tmp, post);
+}
+const ::SourceHook::PassInfo __SourceHook_ParamInfos_ISource2ServerGameFrame0[] = {{1,            0,                                     0},
+																				   {sizeof(bool), ::SourceHook::GetPassInfo<bool>::type, ::SourceHook::GetPassInfo<bool>::flags},
+																				   {sizeof(bool), ::SourceHook::GetPassInfo<bool>::type, ::SourceHook::GetPassInfo<bool>::flags},
+																				   {sizeof(bool), ::SourceHook::GetPassInfo<bool>::type, ::SourceHook::GetPassInfo<bool>::flags}};
+const ::SourceHook::PassInfo::V2Info __SourceHook_ParamInfos2_ISource2ServerGameFrame0[] = {{0, 0, 0, 0},
+																							{0, 0, 0, 0},
+																							{0, 0, 0, 0},
+																							{0, 0, 0, 0}};
+::SourceHook::ProtoInfo __SourceHook_FHCls_ISource2ServerGameFrame0::ms_Proto = {3, {0, 0, 0},
+
+
+
+///
+
+
+	const ::SourceHook::PassInfo __SourceHook_ParamInfos_##ifacetype##ifacefunc##overload[] = { {1, 0, 0}, __SH_GPI(param1), __SH_GPI(param2) }; \
+	const ::SourceHook::PassInfo::V2Info __SourceHook_ParamInfos2_##ifacetype##ifacefunc##overload[] = { __SH_EPI, __SH_EPI, __SH_EPI }; \
+	::SourceHook::ProtoInfo SH_FHCls(ifacetype, ifacefunc, overload)::ms_Proto = { 2, __SH_GPI(rettype), \
+		__SourceHook_ParamInfos_##ifacetype##ifacefunc##overload, 0, __SH_EPI, __SourceHook_ParamInfos2_##ifacetype##ifacefunc##overload };

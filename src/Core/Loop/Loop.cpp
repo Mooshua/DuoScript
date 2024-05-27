@@ -1,7 +1,5 @@
 // Copyright (c) 2024 Mooshua. All rights reserved.
 
-#include <DuoMetamod.h>
-
 #include "Loop.h"
 #include "AsyncHandle.h"
 #include "DelayHandle.h"
@@ -84,8 +82,17 @@ IDelayHandle *Loop::NewDelay(ILoop::Delay callback)
 	return new DelayHandle(callback, this);
 }
 
-IBaseHandle *Loop::NewWorkUnsafe(void *work, ILoop::WorkProcessor processor, ILoop::WorkReceiver receiver)
+IBaseHandle *Loop::NewWorkUnsafe(void *work, ILoop::WorkProcessor processor, ILoop::WorkReceiver receiver, bool emulate)
 {
+	if (emulate)
+	{
+		//	Our job is to pretend we're calling this async,
+		//	but secretly call it synchronously >:]
+		auto out = processor(work);
+		receiver(work, out);
+		return nullptr;
+	}
+
 	return new WorkHandle(work, processor, receiver, this);
 }
 

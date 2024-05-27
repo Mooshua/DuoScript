@@ -13,7 +13,7 @@ class ScriptFiber : public virtual IScriptFiber
 	friend class ScriptIsolate;
 public:
 	ScriptFiber(ScriptIsolate* parent, lua_State *L, IScriptRef* thread_ref);
-	~ScriptFiber();
+	~ScriptFiber() override;
 
 public:
 	///	True when the fiber is ready to begin another call
@@ -26,9 +26,16 @@ public:
 
 	virtual bool TryContinue(IScriptInvoke** args = nullptr);
 
+	///	Kill this fiber with an error, without actually running the fiber.
+	///	This does the same logic as an error within the fiber.
+	virtual void Kill(const char* fmt, ...);
 
 	///	Invoke this isolate
 	virtual IScriptReturn* Call(bool use);
+
+protected:
+	///	Report an error and unwind the stack
+	void OnError(const char* error);
 
 public:
 	ScriptCall call;

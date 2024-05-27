@@ -1,6 +1,6 @@
 // Copyright (c) 2024 Mooshua. All rights reserved.
 
-#include "DuoMetamod.h"
+#include "Metamod/DuoMetamod.h"
 #include "ModuleManager.h"
 #include "Logging/Log.h"
 #include "Files/Files.h"

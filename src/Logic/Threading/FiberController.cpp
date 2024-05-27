@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Mooshua. All rights reserved.
 
 #include "FiberController.h"
-#include "DuoModule.h"
+#include "LogicGlobals.h"
 
 FiberController g_FiberController;
 
@@ -69,4 +69,15 @@ IScriptResult *FiberController::Resume(FiberEntity *entity, IScriptCall *args)
 	args->PushVarArgs(results, 0);
 
 	return args->Return();
+}
+
+IScriptResult *FiberController::Sleep(IScriptCall *args)
+{
+	unsigned duration;
+	if (!args->ArgUnsigned(1, &duration))
+		return args->Error("Expected argument 1 to be an unsigned integer");
+
+	//	Begin delaying
+	new ThreadResumer(args->GetFiber(), duration);
+	return args->Await();
 }

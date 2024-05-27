@@ -5,6 +5,8 @@
 #include "ScriptObject.h"
 #include "Logging/Log.h"
 
+#include <amtl/am-string.h>
+
 ScriptFiber::ScriptFiber(ScriptIsolate *parent, lua_State *L, IScriptRef* thread_ref)
 	: call(ScriptCall(this))
 {
@@ -83,23 +85,12 @@ IScriptReturn *ScriptFiber::Call(bool use)
 
 	call.SetupReturn(lua_gettop(L), status);
 
-	if (call.IsError()) {
-
-		g_Log.Message("Luau", ILogger::SEV_ERROR,
-					  "Script error: %s", lua_tostring(L, -1));
-		lua_Debug debug;
-
-		for (int i = 0; i < lua_stackdepth(L); ++i) {
-
-			lua_getinfo(L, i, "nsl", &debug);
-
-			g_Log.Message("Luau", ILogger::SEV_ERROR,
-						  "    [%s:%i] %s @ %s",
-						  debug.short_src, debug.linedefined, debug.what, debug.name);
-		}
+	if (call.IsError())
+	{
+		this->OnError(lua_tostring(L, -1));
 	}
 
-	if (!use)
+	if (!use && status != LUA_YIELD)
 	{
 		//	We're fire and forget, so no one is holding on to us.
 		//	Delete ourselves so we can be returned to the thread pool.
@@ -108,4 +99,37 @@ IScriptReturn *ScriptFiber::Call(bool use)
 	}
 
 	return &call;
+}
+
+void ScriptFiber::Kill(const char *fmt, ...)
+{
+	char buffer[2048];
+
+	va_list args;
+	va_start(args, fmt);
+		ke::SafeVsprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+
+	this->OnError(buffer);
+}
+
+void ScriptFiber::OnError(const char *error)
+{
+	g_Log.Message("Luau", ILogger::SEV_ERROR,
+				  "Script error: %s", error);
+	lua_Debug debug;
+
+	for (int i = 0; i < lua_stackdepth(L); ++i) {
+
+		lua_getinfo(L, i, "nsl", &debug);
+
+		g_Log.Message("Luau", ILogger::SEV_ERROR,
+					  "    [%s:%i] %s @ %s",
+					  debug.short_src, debug.linedefined, debug.what, debug.name);
+	}
+
+	//	Reset this thread since we've errored.
+	//	This prevents it from ever being used, but doesn't actually free it
+	//	(so we can still safely hold on to this fiber for a bit)
+	lua_resetthread(this->L);
 }

@@ -31,6 +31,6 @@ endif()
 # Moar debug!
 add_library(MOARDEBUG INTERFACE IMPORTED)
 if(MSVC)
-    target_compile_options(HOTPATCH INTERFACE /Zo /Zi)
+    # target_compile_options(HOTPATCH INTERFACE /Zo /Zi)
 else()
 endif()

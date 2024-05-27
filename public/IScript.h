@@ -66,6 +66,9 @@ public:
 class IScriptFiber
 {
 public:
+	//	This should ONLY be called if you pass true to .Call().
+	virtual ~IScriptFiber() = default;
+
 	///	True when the fiber is ready to begin another call
 	virtual bool IsReady() = 0;
 
@@ -78,8 +81,23 @@ public:
 	///	Try to continue a previously yielded fiber
 	virtual bool TryContinue(IScriptInvoke** args = nullptr) = 0;
 
+	///	Throw an error in this fiber from an external
+	///	thread (do NOT call while executing!)
+	virtual void Kill(const char* fmt, ...) = 0;
+
 	///	Invoke this isolate
 	virtual IScriptReturn* Call(bool use) = 0;
+};
+
+///	Resources for an isolate, such as require() resolving
+class IIsolateResources
+{
+public:
+	///	Get the code resource at the specified path
+	virtual bool TryGetResource(const char* name, std::string* results) = 0;
+
+	virtual bool TryGetCodeResource(const char *name, std::string *results) = 0;
+
 };
 
 class IScriptIsolate
@@ -89,8 +107,16 @@ public:
 	///	Create a handle pointing to this isolate
 	virtual IIsolateHandle* ToHandle() = 0;
 
+	///	Get the resources associated with this isolate
+	virtual IIsolateResources* GetResources() = 0;
+
+	///	Load some code into this isolate
+	///	This creates an IScriptMethod that can be executed in this isolate,
+	///	or any for that matter, but it should really stay in here :)
 	virtual bool TryLoad(const char* name, std::string data, IScriptMethod **method, char* error, int maxlength) = 0;
 
+	///	Create a new fiber to execute code in
+	///	Each fiber can run concurrently using Await() calls.
 	virtual IScriptFiber* NewFiber() = 0;
 };
 
@@ -99,7 +125,7 @@ class IScript
 public:
 	virtual void Initialize() = 0;
 
-	virtual IScriptIsolate* CreateIsolate() = 0;
+	virtual IScriptIsolate* CreateIsolate(IIsolateResources* resources) = 0;
 };
 
 class IIsolateHandle
