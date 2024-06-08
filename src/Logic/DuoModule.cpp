@@ -4,6 +4,7 @@
 
 #include "DuoModule.h"
 #include "Threading/FiberController.h"
+#include "Memory/PointerController.h"
 
 MODULE_INIT(Logic);
 
@@ -15,4 +16,5 @@ void Logic::OnReady()
 void Logic::OnScriptReady(IScriptControllerManager *manager)
 {
 	manager->Register(&g_FiberController);
+	manager->Register(&g_PointerController);
 }

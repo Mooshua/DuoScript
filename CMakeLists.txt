@@ -171,6 +171,10 @@ set(duo_logic_sources
 
         src/Logic/Generic/PerformanceController.cpp
         src/Logic/Generic/LogController.cpp
+        src/Logic/Net/HttpRequestController.cpp
+        src/Logic/Net/HttpRequestController.h
+        src/Logic/Memory/PointerController.cpp
+        src/Logic/Memory/PointerController.h
 
 
 )
