@@ -55,7 +55,21 @@
 #endif
 
 
+#define PRINT_IMPL(message) \
+	/*if (g_Engine == nullptr)*/ \
+		printf("%s", message );  \
+	/*else*/ \
+		/*g_Engine->LogPrint( message )*/;
+
 Log g_Log;
+
+void Log::Blank(const char *fmt, ...)
+{
+	std::va_list args;
+	va_start(args, fmt);
+		this->BlankEx(fmt, args);
+	va_end(args);
+}
 
 void Log::Message(const char *system, Log::Severity severity, const char *fmt, ...)
 {
@@ -83,14 +97,12 @@ void Log::Tip(const char *system, const char *fmt, ...)
 
 void Log::ComponentEx(const char *system, Log::Status status, const char *fmt, va_list args)
 {
-	char inner_message[4096];
-	char message[4096];
 
-	ke::SafeVsprintf(inner_message, sizeof(inner_message), fmt, args);
+	std::string inner_message = ke::StringPrintfVa(fmt, args);
 	this->Sanitize(inner_message);
 
-	ke::SafeSprintf(message, sizeof(message), Reset "* %s init %15s " Reset "| %s\n" ,
-					this->ToString(status), system, inner_message);
+	std::string message = ke::StringPrintf(Reset "* %s init %15s " Reset "| %s\n" ,
+					this->ToString(status), system, inner_message.c_str());
 
 #if 0
 	g_Engine->LogPrint(
@@ -113,46 +125,43 @@ void Log::ComponentEx(const char *system, Log::Status status, const char *fmt, v
 			);
 #endif
 
-	//if (g_Engine == nullptr)
-		printf("%s",message);
-	//else
-	//	g_Engine->LogPrint(message);
+	PRINT_IMPL( message.c_str() )
 }
 
 void Log::MessageEx(const char *system, Log::Severity severity, const char *fmt, va_list args)
 {
-	char inner_message[4096];
-	char message[4096];
-
-	ke::SafeVsprintf(inner_message, sizeof(inner_message), fmt, args);
+	std::string inner_message = ke::StringPrintfVa(fmt, args);
 	this->Sanitize(inner_message);
 
-	ke::SafeSprintf(message, sizeof(message), Reset "* %s %20s " Reset "| %s\n" ,
-					this->ToString(severity), system, inner_message);
+	std::string message = ke::StringPrintf(Reset "* %s %20s " Reset "| %s\n" ,
+										   this->ToString(severity), system, inner_message.c_str());
 
-	//if (g_Engine == nullptr)
-		printf("%s",message);
-	//else
-	//	g_Engine->LogPrint(message);
+	PRINT_IMPL( message.c_str() )
 }
 
 void Log::TipEx(const char *system, const char *fmt, va_list args)
 {
-	char inner_message[4096];
-	char message[4096];
 
 	const char* tip_thing = Reset "[" ColorYellow "tip!" Reset "]" ColorYellow;
 
-	ke::SafeVsprintf(inner_message, sizeof(inner_message), fmt, args);
+	std::string inner_message = ke::StringPrintfVa(fmt, args);
 	this->Sanitize(inner_message);
 
-	ke::SafeSprintf(message, sizeof(message), Reset "* %s tip %16s " Reset "| " ColorOrange " %s\n" Reset,
-					tip_thing, system, inner_message);
+	std::string message = ke::StringPrintf(Reset "* %s tip %16s " Reset "| " ColorOrange " %s\n" Reset,
+					tip_thing, system, inner_message.c_str());
 
-	//if (g_Engine == nullptr)
-		printf("%s",message);
-	//else
-	//	g_Engine->LogPrint(message);
+	PRINT_IMPL( message.c_str() )
+}
+
+void Log::BlankEx(const char *fmt, va_list args)
+{
+	std::string inner_message = ke::StringPrintfVa(fmt, args);
+	this->Sanitize(inner_message);
+
+	std::string message = ke::StringPrintf(Reset "* %27s " Reset "| %s\n" ,
+										   "", inner_message.c_str());
+
+	PRINT_IMPL( message.c_str() )
 }
 
 const char *Log::ToString(Log::Status status)
@@ -180,14 +189,15 @@ const char *Log::ToString(Log::Severity severity)
 }
 
 //	Prevent ANSI escape sequences from being written to the console
-void Log::Sanitize(char *string)
+void Log::Sanitize(std::string &line)
 {
-	for (int i = 0; string[i] != '\0'; i++)
+	for (int i = 0; i < line.length(); i++)
 	{
-		if (string[i] == '\x1')
-			string[i] = '^';
+		if (line.data()[i] == '\x1')
+			line.data()[i] = '^';
 	}
 }
+
 
 
 

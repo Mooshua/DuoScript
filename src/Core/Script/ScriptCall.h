@@ -109,6 +109,9 @@ public:
 	bool ArgBuffer(int slot, void** result, size_t* size) override;
 	bool ArgBuffer(int slot, std::string* result) override;
 
+	///	@brief Get another controller's entity as an argument
+	virtual bool ArgOpaqueEntity(int slot, IBaseScriptControllerEntity** userdata);
+
 	void PushBool(bool value) override;
 	void PushString(const char* value, int length) override;
 	void PushObject(IScriptRef* value) override;

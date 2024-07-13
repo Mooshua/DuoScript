@@ -10,6 +10,9 @@
 class Log : public virtual ILogger
 {
 public:
+	virtual void Blank(const char* fmt, ...);
+	virtual void BlankEx(const char* fmt, va_list args);
+
 	///	Log the success/failure of a component
 	virtual void Component(const char* system, ILogger::Status status, const char* fmt, ...);
 	virtual void ComponentEx(const char* system, ILogger::Status status, const char* fmt, va_list args);
@@ -24,7 +27,7 @@ private:
 	//const char* ToColor(const char* string);
 	const char* ToString(Status status);
 	const char* ToString(Severity severity);
-	void Sanitize(char* string);
+	void Sanitize(std::string &string);
 };
 
 extern Log g_Log;

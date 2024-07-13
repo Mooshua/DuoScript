@@ -11,6 +11,7 @@
 #include "Sdk/Controllers/LuauFrontend.h"
 #include "Sdk/Controllers/LuauCheckResult.h"
 #include "Files/ZipController.h"
+#include "Memory/PointerController.h"
 
 Main g_Main;
 ILogger* g_DuoLog;
@@ -32,6 +33,7 @@ int main(int argc, char *argv[])
 		controllers->Register(&g_FileController);
 		controllers->Register(&g_LogController);
 		controllers->Register(&g_ZipController);
+		controllers->Register(&g_PointerController);
 
 		controllers->Register(&g_LuauFrontend);
 		controllers->Register(&g_LuauCheckResult);

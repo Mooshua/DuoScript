@@ -15,6 +15,11 @@ add_subdirectory(luau)
 # use mimalloc allocator
 target_link_libraries(Luau.VM PUBLIC mimalloc-static)
 
+# httplib
+set(HTTPLIB_COMPILE ON)
+add_subdirectory(httplib)
+include_directories(httplib)
+
 # HL2SDK
 
 # Platform Defines

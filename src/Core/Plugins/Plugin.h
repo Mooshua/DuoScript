@@ -29,16 +29,17 @@ public:
 public:	//	IPlugin
 	IPluginResources* GetResources();
 
-
 public:	//	IPluginResources
+	virtual const char* GetName();
 	virtual bool TryGetResource(const char* name, std::string* results);
 	virtual bool TryGetCodeResource(const char* name, std::string* results);
 
 	///	Get a list of resources contained in this plugin
 	virtual void GetResources(std::vector<const char*>* names, const char* search = nullptr);
 
-
 protected:
+
+	std::string _name;
 
 	int _id;
 	PluginManager* _parent;

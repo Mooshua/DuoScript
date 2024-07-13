@@ -35,6 +35,8 @@ public:
 	///	Invoke this isolate
 	virtual IScriptReturn* Call(bool use);
 
+	virtual bool TryDepend(IScriptFiber* other);
+
 protected:
 	///	Report an error and unwind the stack
 	void OnError(const char* error);
@@ -49,6 +51,8 @@ protected:
 	IScriptRef* thread_reference;
 	//	Unique ID assigned to us by the isolate
 	int fiber_id;
+
+	std::vector<IFiberHandle*> _dependants;
 };
 
 

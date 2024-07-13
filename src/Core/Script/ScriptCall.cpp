@@ -299,6 +299,21 @@ bool ScriptCall::ArgBuffer(int slot, std::string *result)
 	return true;
 }
 
+bool ScriptCall::ArgOpaqueEntity(int slot, IBaseScriptControllerEntity **userdata)
+{
+	if (slot > stack_push)
+		return false;
+
+	slot += this->has_self;
+
+	if (!lua_isuserdata(this->parent->L, slot))
+		return false;
+
+	void *udata = lua_touserdata(this->parent->L, 1);
+	*userdata = static_cast<IBaseScriptControllerEntity*>(udata);
+
+	return true;
+}
 
 void ScriptCall::PushVarArgs(IScriptPolyglotView *from, int after)
 {
@@ -380,5 +395,7 @@ IScriptPolyglot *ScriptCall::ToPolyglot()
 {
 	return this;
 }
+
+
 
 

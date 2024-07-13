@@ -71,33 +71,48 @@ public:
 	//	This should ONLY be called if you pass true to .Call().
 	virtual ~IScriptFiber() = default;
 
+	///	Create a handle pointing to this fiber
+	///	This can be used to hold a weak reference
+	///	that will dissolve when the fiber ends
+	virtual IFiberHandle* ToHandle() = 0;
+
 	///	True when the fiber is ready to begin another call
 	virtual bool IsReady() = 0;
 
-	///	Create a handle pointing to this fiber
-	virtual IFiberHandle* ToHandle() = 0;
-
 	///	Begin a call to the specified method
+	///	Use the provided IScriptInvoke* to add arguments
 	virtual bool TrySetup(IScriptMethod* method, IScriptInvoke** args = nullptr) = 0;
 
 	///	Try to continue a previously yielded fiber
+	///	This can be used by advanced users to start a coroutine within a fiber
 	virtual bool TryContinue(IScriptInvoke** args = nullptr) = 0;
 
 	///	Throw an error in this fiber from an external
 	///	thread (do NOT call while executing!)
 	virtual void Kill(const char* fmt, ...) = 0;
 
-	///	Invoke this isolate
-	virtual IScriptReturn* Call(bool use) = 0;
+	///	Invoke this isolate once the appropriate TrySetup/TryContinue
+	///	command has been issued & arguments have been passed
+	///	@param use pass true to prevent the fiber from de-allocating itself.
+	virtual IScriptReturn* Call(bool use = false) = 0;
+
+	/// @brief Request another fiber be resumed when this one completes
+	///	The other fiber should already be yielded. The fiber will be invoked
+	///	with all args returned from this fiber.
+	virtual bool TryDepend(IScriptFiber* other) = 0;
 };
 
 ///	Resources for an isolate, such as require() resolving
 class IIsolateResources
 {
 public:
-	///	Get the code resource at the specified path
+	///	@brief Get the name of the isolate
+	virtual const char* GetName() = 0;
+
+	///	@brief Get the resource at the specified path
 	virtual bool TryGetResource(const char* name, std::string* results) = 0;
 
+	///	@brief Compile the source file at the specified path
 	virtual bool TryGetCodeResource(const char *name, std::string *results) = 0;
 
 };

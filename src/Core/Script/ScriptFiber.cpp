@@ -87,13 +87,29 @@ IScriptReturn *ScriptFiber::Call(bool use)
 
 	call.SetupReturn(lua_gettop(L), status);
 
-	if (call.IsError())
-	{
+	if (call.IsError()) {
 		this->OnError(lua_tostring(L, -1));
 	}
 
-	if (!use && status != LUA_YIELD)
-	{
+	//	Resume any fibers waiting on the results of this fiber
+	if (status != LUA_YIELD) {
+		for (IFiberHandle *dependant: _dependants) {
+			if (!dependant->Exists())
+				continue;
+
+			IScriptFiber *fiber = dependant->Get();
+			IScriptInvoke *invoke;
+			if (fiber->TryContinue(&invoke)) {
+				//	First return: Was the fiber successful?
+				invoke->PushBool(!call.IsError());
+				invoke->PushVarArgs(call.ToPolyglot());
+
+				fiber->Call(false);
+			}
+		}
+	}
+
+	if (!use && status != LUA_YIELD) {
 		//	We're fire and forget, so no one is holding on to us.
 		//	Delete ourselves so we can be returned to the thread pool.
 		delete this;
@@ -117,7 +133,7 @@ void ScriptFiber::Kill(const char *fmt, ...)
 
 void ScriptFiber::OnError(const char *error)
 {
-	g_Log.Message("Luau", ILogger::SEV_ERROR,
+	g_Log.Message(this->parent->GetResources()->GetName(), ILogger::SEV_ERROR,
 				  "Script error: %s", error);
 	lua_Debug debug;
 
@@ -125,8 +141,7 @@ void ScriptFiber::OnError(const char *error)
 
 		lua_getinfo(L, i, "nsl", &debug);
 
-		g_Log.Message("Luau", ILogger::SEV_ERROR,
-					  "    [%s:%i] %s @ %s",
+		g_Log.Blank("    [%s:%i] %s @ %s",
 					  debug.short_src, debug.linedefined, debug.what, debug.name);
 	}
 
@@ -134,4 +149,9 @@ void ScriptFiber::OnError(const char *error)
 	//	This prevents it from ever being used, but doesn't actually free it
 	//	(so we can still safely hold on to this fiber for a bit)
 	lua_resetthread(this->L);
+}
+
+bool ScriptFiber::TryDepend(IScriptFiber *other)
+{
+	_dependants.push_back(other->ToHandle());
 }

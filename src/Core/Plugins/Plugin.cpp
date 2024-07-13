@@ -15,6 +15,8 @@ Plugin::~Plugin()
 
 Plugin::Plugin(const char *path, PluginManager* parent, int id)
 {
+	this->_name = path;
+
 	this->_parent = parent;
 	this->_id = id;
 
@@ -121,6 +123,11 @@ void Plugin::Stop()
 
 	delete _entryMethod;
 	delete _isolate;
+}
+
+const char *Plugin::GetName()
+{
+	return this->_name.c_str() + this->_name.rfind('/');
 }
 
 

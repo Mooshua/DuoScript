@@ -58,6 +58,8 @@ include_directories(
         pkg/luau/Analysis/include
         pkg/luau/Ast/include
 
+        pkg/httplib
+
         pkg/amtl
 
         pkg/zip/src

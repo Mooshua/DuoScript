@@ -41,6 +41,9 @@ public:
 		LEN_STATUS,
 	};
 
+	virtual void Blank(const char* fmt, ...) = 0;
+	virtual void BlankEx(const char* fmt, va_list args) = 0;
+
 	///	Log the success/failure of a component
 	virtual void Component(const char *system, Status status, const char *fmt, ...) = 0;
 	virtual void ComponentEx(const char *system, Status status, const char *fmt, va_list args) = 0;

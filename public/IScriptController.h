@@ -95,6 +95,23 @@ public:
 	virtual IControllerInstance* GetInstance() = 0;
 	virtual IBaseScriptController* GetController() = 0;
 	virtual void* GetEntity() = 0;
+
+	///	@brief Attempt to convert an entity to the desired type
+	///	If this is successful, it will return true and write the pointer
+	///	to the entity in *result.
+	///
+	///	The pointer is NOT yield safe; do NOT toss this pointer across
+	///	returns or yield calls: this is UNDEFINED BEHAVIOR.
+	template<typename EntityType>
+	bool TryGetEntity(EntityType** result)
+	{
+		EntityType* entity = dynamic_cast<EntityType*>(this->GetEntity());
+
+		if (entity == nullptr)
+			return false;
+
+		*result = entity;
+	}
 };
 
 //	Dummy entity for people who don't want an entity

@@ -21,3 +21,6 @@
 [submodule "pkg/zip"]
 	path = pkg/zip
 	url = https://github.com/kuba--/zip
+[submodule "pkg/httplib"]
+	path = pkg/httplib
+	url = https://github.com/yhirose/cpp-httplib

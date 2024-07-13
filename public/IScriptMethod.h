@@ -13,6 +13,7 @@ class IScript;
 class IScriptIsolate;
 class IScriptCall;
 class IScriptPolyglot;
+class IBaseScriptControllerEntity;
 
 class IFiberHandle;
 class IIsolateHandle;
@@ -51,6 +52,9 @@ public:
 	//	across isolate boundaries!
 	virtual bool ArgMethod(int slot, IScriptMethod** result) = 0;
 	virtual bool ArgTable(int slot, IScriptObject** result) = 0;
+
+	///	@brief Get another controller's entity as an argument
+	virtual bool ArgOpaqueEntity(int slot, IBaseScriptControllerEntity** userdata) = 0;
 
 };
 
