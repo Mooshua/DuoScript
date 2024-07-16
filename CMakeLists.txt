@@ -240,6 +240,8 @@ add_executable(duokit
         src/Sdk/Controllers/LuauFrontend.h
         src/Sdk/Controllers/LuauCheckResult.cpp
         src/Sdk/Controllers/LuauCheckResult.h
+        src/Sdk/Controllers/LuauType.cpp
+        src/Sdk/Controllers/LuauType.h
 )
 
 

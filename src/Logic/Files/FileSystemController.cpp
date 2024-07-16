@@ -4,6 +4,7 @@
 
 #include "FileSystemController.h"
 #include "LogicGlobals.h"
+#include "Files/Files.h"
 
 FileController g_FileController;
 
@@ -91,8 +92,12 @@ IScriptResult *FileController::Open(IScriptCall *call)
 	if (!call->ArgString(1, path, sizeof(path)))
 		call->Error("Expected argument 1 to be a string!");
 
+	//	Optional arg: Should we make a file if we dont have one?
+	bool create = true;
+	call->ArgBool(2, &create);
+
 	FileOpenRequest* request = new FileOpenRequest(call->GetFiber(), this);
-	uv_fs_open(g_DuoLoop->AsLoop(), &request->request, path, UV_FS_O_RDWR | UV_FS_O_CREAT, 0, &FileOpenRequest::Callback);
+	uv_fs_open(g_DuoLoop->AsLoop(), &request->request, path, UV_FS_O_RDWR | (create ? UV_FS_O_CREAT : 0), 0, &FileOpenRequest::Callback);
 
 	return call->Await();
 }
@@ -152,4 +157,32 @@ IScriptResult *FileController::Write(FileEntity* file, IScriptCall *call)
 	return call->Await();
 }
 
+IScriptResult *FileController::GetFiles(IScriptCall *call)
+{
+	std::vector<std::string> files;
+	std::string path = "";
+	call->ArgString(1, &path);
 
+	g_Files.GetFiles(&files, "%s", path.c_str());
+
+	for (auto file : files) {
+		call->PushString(file.c_str());
+	}
+
+	return call->Return();
+}
+
+IScriptResult *FileController::GetDirectories(IScriptCall *call)
+{
+	std::vector<std::string> files;
+	std::string path = "";
+	call->ArgString(1, &path);
+
+	g_Files.GetDirectories(&files, "%s", path.c_str());
+
+	for (auto file : files) {
+		call->PushString(file.c_str());
+	}
+
+	return call->Return();
+}

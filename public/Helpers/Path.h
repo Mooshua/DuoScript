@@ -7,6 +7,7 @@
 
 #include <amtl/os/am-path.h>
 #include <amtl/am-platform.h>
+#include <filesystem>
 
 #ifndef DUO_INDEPENDENT
 #include <ISmmAPI.h>
@@ -24,21 +25,28 @@ extern ISmmAPI* g_SMAPI;
 
 namespace duo
 {
+	inline std::string ExecutablePath()
+	{
+		char base[FILENAME_MAX];
+#ifdef KE_WINDOWS
+		GetModuleFileNameA(NULL, base, sizeof(base));
+#else
+		readlink("/proc/self/exe", base, sizeof(base));
+#endif
+
+		return std::filesystem::path(base).parent_path().string();
+	}
+
 	inline void BuildPathEx(char* buffer, size_t maxlen, const char* fmt, va_list args)
 	{
 #ifdef DUO_INDEPENDENT
-		char base[FILENAME_MAX];
-	#ifdef KE_WINDOWS
-		GetModuleFileNameA(NULL, base, sizeof(base));
-	#else
-		readlink("/proc/self/exe", base, sizeof(base));
-	#endif
+		const char* base = "";
 #else
 		const char* base = g_SMAPI->GetBaseDir();
 #endif
 
 #ifdef DUO_INDEPENDENT
-		const char* format = "%s/%s";
+		const char* format = "%s%s";
 #else
 		const char* format = "%s/addons/duo/%s";
 #endif

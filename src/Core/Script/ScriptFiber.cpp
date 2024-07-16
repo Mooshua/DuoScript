@@ -154,4 +154,5 @@ void ScriptFiber::OnError(const char *error)
 bool ScriptFiber::TryDepend(IScriptFiber *other)
 {
 	_dependants.push_back(other->ToHandle());
+	return true;
 }

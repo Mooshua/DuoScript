@@ -11,10 +11,6 @@
 --  In other words, we're making it as easy as possible for the
 --  C++ plugin manager to interact with this plugin.
 
-local zip = Zip:Open("duokit.duo", true);
-
-zip:read("idontexist.luau");
-
 function FileResolver(path: string)
     Log:Debug(path, "FileResolver")
 
@@ -39,11 +35,26 @@ function ModuleResolver(name: any)
     return name;
 end
 
-local frontend = LuauFrontend:New(FileResolver, ModuleResolver);
+function EnvironmentResolver(name: string)
+    Log:Debug(name, "EnvironmentResolver")
 
-local results = frontend:Check("hi")
+    return name;
+end
 
+local frontend = LuauFrontend:New(FileResolver, ModuleResolver, EnvironmentResolver);
+
+--local results = frontend:Check("hi")
+
+local files = { File:GetFiles(".") }
+
+Log:Info("file");
+
+for i, v in ipairs(files) do
+    Log:Info("file: "..v);
+end
+
+--[[
 for i = 1, results.ErrorCount do
     local code, error, module, location = results:GetError(i);
     Log:Error(code .. ": " .. error, module .. " " .. location)
-end
+end]]

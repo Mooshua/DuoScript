@@ -34,6 +34,9 @@ class PluginManager : public virtual IPluginManager
 	friend class Plugin;
 
 public:
+	PluginLoadResult* LoadPluginInternal(const char* name, const char* path);
+
+public:	// IPluginManager
 	PluginLoadResult* LoadPlugin(const char* name);
 
 	PluginLoadResult* GetPlugin(int id);

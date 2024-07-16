@@ -51,16 +51,18 @@ public:
 class LuauFileResolver : public Luau::FileResolver
 {
 public:
-	LuauFileResolver(IIsolateHandle* isolate, IScriptMethod* readmethod, IScriptMethod* resolveMethod);
+	LuauFileResolver(IIsolateHandle* isolate, IScriptMethod* readmethod, IScriptMethod* resolveMethod, IScriptMethod* envmethod);
 	~LuauFileResolver() override;
 
 public:	//	FileResolver
 	std::optional<Luau::SourceCode> readSource(const Luau::ModuleName& name) override;
 	std::optional<Luau::ModuleInfo> resolveModule(const Luau::ModuleInfo* context, Luau::AstExpr* expr) override;
+	std::optional<std::string> getEnvironmentForModule(const Luau::ModuleName& name) const override;
 
 protected:
 	IScriptMethod* readmethod;
 	IScriptMethod* resolvemethod;
+	IScriptMethod* envmethod;
 
 	IIsolateHandle* isolate;
 };
@@ -82,6 +84,8 @@ public:
 
 public:
 	IScriptResult* Check(LuauFrontend* entity, IScriptCall* call);
+	IScriptResult* AddType(LuauFrontend* entity, IScriptCall* call);
+
 };
 
 extern LuauFrontendController g_LuauFrontend;

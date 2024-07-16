@@ -13,8 +13,8 @@ LuauCompilerController g_LuauCompilerController;
 
 IScriptResult *LuauCompilerController::TryCompile(IScriptCall *args)
 {
-	std::string source = std::string(1048576, '\0');
-	if (!args->ArgString(1, source.data(), source.capacity()))
+	std::string source = std::string();
+	if (!args->ArgString(1, &source))
 		return args->Error("Expected argument 1 to be a string!");
 
 	try

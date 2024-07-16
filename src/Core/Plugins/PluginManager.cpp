@@ -9,19 +9,16 @@
 
 PluginManager g_PluginManager;
 
-PluginLoadResult* PluginManager::LoadPlugin(const char *name)
+PluginLoadResult *PluginManager::LoadPluginInternal(const char *name, const char *path)
 {
 	char error[512];
-	char path[256];
-
-	duo::BuildPath(path, sizeof(path), "plugins/%s", name);
 
 	PluginLoadResult* result = new PluginLoadResult();
 	this->_plugins.push_back(result);
 
 	result->name = std::string(name);
 
-	Plugin* plugin = new Plugin(name, this, this->_plugins.size() - 1 /* index of our PluginLoadResult* */);
+	Plugin* plugin = new Plugin(path, this, this->_plugins.size() - 1 /* index of our PluginLoadResult* */);
 
 
 	if (!plugin->TryLoad(error, sizeof(error)))
@@ -43,6 +40,15 @@ PluginLoadResult* PluginManager::LoadPlugin(const char *name)
 	g_Log.Message("PluginSys", Log::SEV_INFO, "Loaded plugin %s", result->name.c_str());
 
 	return result;
+}
+
+PluginLoadResult* PluginManager::LoadPlugin(const char *name)
+{
+	char path[256];
+
+	duo::BuildPath(path, sizeof(path), "plugins/%s", name);
+
+	return this->LoadPluginInternal(name, path);
 }
 
 PluginLoadResult *PluginManager::GetPlugin(int id)
@@ -94,3 +100,6 @@ void PluginManager::LoadAllPlugins()
 
 	}
 }
+
+
+

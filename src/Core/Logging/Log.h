@@ -6,6 +6,7 @@
 #define DUOSCRIPT_LOG_H
 
 #include <ILogger.h>
+#include <string>
 
 class Log : public virtual ILogger
 {

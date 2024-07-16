@@ -6,23 +6,34 @@
 #include "Luau/Config.h"
 #include "Luau/LinterConfig.h"
 #include "Luau/Transpiler.h"
+#include "Luau/Frontend.h"
 #include "LogicGlobals.h"
 #include "ILogger.h"
 #include "LuauCheckResult.h"
 #include "Luau/BuiltinDefinitions.h"
 
+#include <numeric>
+
 LuauFrontendController g_LuauFrontend;
 
-LuauFileResolver::LuauFileResolver(IIsolateHandle *isolate, IScriptMethod *readmethod, IScriptMethod* resolvemethod)
+LuauFileResolver::LuauFileResolver(IIsolateHandle *isolate,
+								   IScriptMethod* readmethod,
+								   IScriptMethod* resolvemethod,
+								   IScriptMethod* envmethod
+								   )
 {
 	this->isolate = isolate;
 	this->readmethod = readmethod;
 	this->resolvemethod = resolvemethod;
+	this->envmethod = envmethod;
 }
 
 LuauFileResolver::~LuauFileResolver()
 {
 	delete this->readmethod;
+	delete this->resolvemethod;
+	delete this->envmethod;
+
 	delete this->isolate;
 }
 
@@ -59,9 +70,26 @@ std::optional<Luau::ModuleInfo> LuauFileResolver::resolveModule(const Luau::Modu
 	IScriptInvoke* args;
 	fiber->TrySetup(this->resolvemethod, &args);
 	{
-		//	Constant string require() invocation?
-		if (Luau::AstExprConstantString* string = expr->as<Luau::AstExprConstantString>())
-			args->PushString(string->value.begin());
+		//	Are we using fancy schmancy indexing?
+		auto segments = Luau::parsePathExpr(*expr);
+		if (segments.size() == 0)
+		{
+			//	No? Constant string require() invocation?
+			if (Luau::AstExprConstantString* string = expr->as<Luau::AstExprConstantString>())
+				args->PushString(string->value.begin());
+		}
+		else
+		{
+			//	Segments! Join 'em
+			std::string ret;
+			for(const auto &s : segments) {
+				if(!ret.empty())
+					ret += ".";
+				ret += s;
+			}
+
+			args->PushString(ret.c_str());
+		}
 
 		//	Others: Wtf do we do here?
 	}
@@ -76,6 +104,28 @@ std::optional<Luau::ModuleInfo> LuauFileResolver::resolveModule(const Luau::Modu
 	}
 	delete fiber;
 	return module;
+}
+
+std::optional<std::string> LuauFileResolver::getEnvironmentForModule(const Luau::ModuleName &name) const
+{
+	IScriptFiber* fiber = this->isolate->Get()->NewFiber();
+	IScriptInvoke* args;
+	fiber->TrySetup(this->envmethod, &args);
+	{
+		args->PushString(name.c_str());
+	}
+	IScriptReturn* results = fiber->Call(true);
+
+	std::string environment;
+
+	if (!results->ArgString(1, &environment)) {
+		g_DuoLog->Message("FileResolver", ILogger::SEV_WARN,
+						  "nil received when getting environment of module %s", name.c_str());
+		return std::nullopt;
+	}
+
+	delete fiber;
+	return environment;
 }
 
 IScriptResult *LuauFrontendController::New(IScriptCall *call)
@@ -107,12 +157,15 @@ IScriptResult *LuauFrontendController::New(IScriptCall *call)
 
 	IScriptMethod* fileResolve;
 	IScriptMethod* moduleResolve;
+	IScriptMethod* envResolve;
 	if (!call->ArgMethod(1, &fileResolve))
 		return call->Error("Missing FileResolver in argument 1!");
 	if (!call->ArgMethod(2, &moduleResolve))
 		return call->Error("Missing ModuleResolver in argument 2!");
+	if (!call->ArgMethod(2, &envResolve))
+		return call->Error("Missing EnvironmentResolver in argument 3!");
 
-	LuauFileResolver* fileResolver = new LuauFileResolver(call->GetIsolate(), fileResolve, moduleResolve);
+	LuauFileResolver* fileResolver = new LuauFileResolver(call->GetIsolate(), fileResolve, moduleResolve, envResolve);
 
 	entity.Build(fileResolver, configResolver);
 
@@ -132,4 +185,35 @@ IScriptResult *LuauFrontendController::Check(LuauFrontend *entity, IScriptCall *
 	resultEntity.result = result;
 
 	return g_LuauCheckResult.ReturnNew(call, &resultEntity);
+}
+
+IScriptResult *LuauFrontendController::AddType(LuauFrontend *entity, IScriptCall *call)
+{
+	//	Package name used for documentation
+	std::string name;
+	if (!call->ArgString(1, &name))
+		return call->Error("Expected argument 1 to be a string 'name'!");
+
+	std::string definition;
+	if (!call->ArgString(2, &definition))
+		return call->Error("Expected argument 2 to be a string 'definitions'!");
+
+	//	Should this go in a global scope or a module scope?
+	std::string environment;
+	Luau::ScopePtr environment_scope;
+	if (call->ArgString(3, &environment))
+		environment_scope = entity->frontend->getEnvironmentScope(environment);
+	else
+		environment_scope = entity->frontend->globals.globalScope;
+
+	entity->frontend->loadDefinitionFile(
+			entity->frontend->globals,
+			environment_scope,
+			definition,
+			name,
+			true,	//	capture comments?
+			false // check for autocomplete?
+			);
+
+	return call->Return();
 }

@@ -4,6 +4,7 @@
 
 #include "Main.h"
 #include "Logging/Log.h"
+#include "Helpers/Path.h"
 
 #include "Threading/FiberController.h"
 #include "Files/FileSystemController.h"
@@ -17,8 +18,10 @@ Main g_Main;
 ILogger* g_DuoLog;
 ILoop* g_DuoLoop;
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
+	uv_setup_args(argc, argv);
+
 	//	This is to provide binary build compatibility
 	//	with duo_logic
 	g_DuoLog = &g_Log;
@@ -46,7 +49,11 @@ int main(int argc, char *argv[])
 
 void Main::Initialize()
 {
-	this->_plugin = g_PluginManager.LoadPlugin("duokit.duo");
+
+	char path[256];
+	duo::BuildPath(path, sizeof(path), "%s/%s", duo::ExecutablePath().c_str(), "duokit.duo");
+
+	this->_plugin = g_PluginManager.LoadPluginInternal("duokit.duo", path);
 
 	if (!this->_plugin->success)
 	{

@@ -99,11 +99,17 @@ public:
 		CONTROLLER_NAME(File);
 		CONTROLLER_STATIC_METHOD(Open, &FileController::Open);
 
+		CONTROLLER_STATIC_METHOD(GetFiles, &FileController::GetFiles);
+		CONTROLLER_STATIC_METHOD(GetDirs, &FileController::GetDirectories);
+
 		CONTROLLER_METHOD(Read, &FileController::Read);
 		CONTROLLER_METHOD(Write, &FileController::Write);
 	}
 
 	IScriptResult* Open(IScriptCall* call);
+
+	IScriptResult* GetFiles(IScriptCall* call);
+	IScriptResult* GetDirectories(IScriptCall* call);
 
 	IScriptResult* Read(FileEntity* file, IScriptCall* call);
 	IScriptResult* Write(FileEntity* file, IScriptCall* call);
