@@ -8,6 +8,7 @@
 #include <amtl/os/am-path.h>
 #include <amtl/am-platform.h>
 #include <filesystem>
+#include <IProfiler.h>
 
 #ifndef DUO_INDEPENDENT
 #include <ISmmAPI.h>
@@ -39,6 +40,8 @@ namespace duo
 
 	inline void BuildPathEx(char* buffer, size_t maxlen, const char* fmt, va_list args)
 	{
+		DuoScope(Duo::BuildPath);
+
 #ifdef DUO_INDEPENDENT
 		const char* base = "";
 #else

@@ -5,6 +5,7 @@
 #include <mimalloc.h>
 #include "Files.h"
 #include "Helpers/Path.h"
+#include <IProfiler.h>
 
 Files g_Files;
 
@@ -71,6 +72,8 @@ bool Files::TryOpenDirectory(const char *path, uv_dir_t **directory)
 
 void Files::GetFiles(std::vector<std::string> *files, const char *fmt, ...)
 {
+	DuoScope(Files::GetFiles - Synchronous);
+
 	char path[256];
 	GET_PATH(path);
 
@@ -79,6 +82,8 @@ void Files::GetFiles(std::vector<std::string> *files, const char *fmt, ...)
 
 void Files::GetDirectories(std::vector<std::string> *directories, const char *fmt, ...)
 {
+	DuoScope(Files::GetDirectories - Synchronous);
+
 	char path[256];
 	GET_PATH(path);
 

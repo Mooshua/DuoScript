@@ -11,6 +11,8 @@
 --  In other words, we're making it as easy as possible for the
 --  C++ plugin manager to interact with this plugin.
 
+local s, FileTree = require "Tree.FileTree"
+
 function FileResolver(path: string)
     Log:Debug(path, "FileResolver")
 
@@ -44,17 +46,15 @@ end
 local frontend = LuauFrontend:New(FileResolver, ModuleResolver, EnvironmentResolver);
 
 --local results = frontend:Check("hi")
-
-local files = { File:GetFiles(".") }
-
-Log:Info("file");
-
-for i, v in ipairs(files) do
-    Log:Info("file: "..v);
-end
-
 --[[
 for i = 1, results.ErrorCount do
     local code, error, module, location = results:GetError(i);
     Log:Error(code .. ": " .. error, module .. " " .. location)
 end]]
+
+local s, f = FileTree:Query("index");
+print(s,f);
+
+while true do
+    Fiber:Sleep(math.random(1,20))
+end

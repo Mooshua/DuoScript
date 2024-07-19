@@ -9,6 +9,8 @@ FiberController g_FiberController;
 
 IScriptResult *FiberController::New(IScriptCall *args)
 {
+	DuoScope(FiberController::New);
+
 	if (!args->ArgMethod(1, nullptr))
 		return args->Error("Expected argument 1 to be a method");
 
@@ -38,6 +40,8 @@ IScriptResult *FiberController::New(IScriptCall *args)
 
 IScriptResult *FiberController::Await(IScriptCall *args)
 {
+	DuoScope(FiberController::Await);
+
 	//	Error if any arguments are passed
 	//	This is to stop people from being silly and thinking this is
 	//	similar to async/await patterns in other languages.
@@ -54,6 +58,8 @@ IScriptResult *FiberController::Await(IScriptCall *args)
 
 IScriptResult *FiberController::Resume(FiberEntity *entity, IScriptCall *args)
 {
+	DuoScope(FiberController::Resume);
+
 	//	The fiber could be dead, even if we have a handle to it.
 	if (!entity->fiber->Exists())
 		return args->Error("Fiber handle %x is dead", entity);
@@ -75,11 +81,28 @@ IScriptResult *FiberController::Resume(FiberEntity *entity, IScriptCall *args)
 
 IScriptResult *FiberController::Sleep(IScriptCall *args)
 {
+	DuoScope(FiberController::Sleep);
+
 	unsigned duration;
 	if (!args->ArgUnsigned(1, &duration))
 		return args->Error("Expected argument 1 to be an unsigned integer");
 
 	//	Begin delaying
 	new ThreadResumer(args->GetFiber(), duration);
+	return args->Await();
+}
+
+IScriptResult *FiberController::Depend(FiberEntity *entity, IScriptCall *args)
+{
+	DuoScope(FiberController::Depend);
+
+	if (!entity->fiber->Exists())
+		return args->Error("Fiber does not exist!");
+
+	IScriptFiber* fiber = entity->fiber->Get();
+
+	if (!fiber->TryDepend(args->GetFiber()))
+		return args->Error("Failed to depend on fiber!");
+
 	return args->Await();
 }

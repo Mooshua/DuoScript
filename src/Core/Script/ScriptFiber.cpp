@@ -2,6 +2,8 @@
 // This file is licensed under Affero GPL (see LICENSE.md). This file MUST be
 // accessible by any user able to connect to a server running this program.
 
+#include "IProfiler.h"
+
 #include "ScriptFiber.h"
 #include "ScriptHandles.h"
 #include "ScriptObject.h"
@@ -50,6 +52,8 @@ bool ScriptFiber::IsReady()
 
 IFiberHandle *ScriptFiber::ToHandle()
 {
+	DuoScope(ScriptFiber::ToHandle);
+
 	return new FiberHandle(parent->ToHandleInternal(), fiber_id);
 }
 
@@ -82,7 +86,15 @@ bool ScriptFiber::TryContinue(IScriptInvoke **args)
 
 IScriptReturn *ScriptFiber::Call(bool use)
 {
-	int status = lua_resume(L, nullptr, call.stack_pop - this->first_invoke);
+	DuoScope(ScriptFiber::Call);
+
+	int status;
+	{
+		int length;
+		const char* name = this->parent->GetResources()->GetName(&length);
+		DuoScopeDynamic( name, length );
+		status = lua_resume(L, nullptr, call.stack_pop - this->first_invoke);
+	}
 	this->first_invoke = false;
 
 	call.SetupReturn(lua_gettop(L), status);
@@ -93,6 +105,8 @@ IScriptReturn *ScriptFiber::Call(bool use)
 
 	//	Resume any fibers waiting on the results of this fiber
 	if (status != LUA_YIELD) {
+		DuoScope(ScriptFiber::Call - Continue Dependants);
+
 		for (IFiberHandle *dependant: _dependants) {
 			if (!dependant->Exists())
 				continue;
@@ -102,7 +116,7 @@ IScriptReturn *ScriptFiber::Call(bool use)
 			if (fiber->TryContinue(&invoke)) {
 				//	First return: Was the fiber successful?
 				invoke->PushBool(!call.IsError());
-				invoke->PushVarArgs(call.ToPolyglot());
+				invoke->PushVarArgs(call.ToPolyglot(), 1);
 
 				fiber->Call(false);
 			}
@@ -133,6 +147,8 @@ void ScriptFiber::Kill(const char *fmt, ...)
 
 void ScriptFiber::OnError(const char *error)
 {
+	DuoScope(ScriptFiber::OnError);
+
 	g_Log.Message(this->parent->GetResources()->GetName(), ILogger::SEV_ERROR,
 				  "Script error: %s", error);
 	lua_Debug debug;
@@ -151,8 +167,8 @@ void ScriptFiber::OnError(const char *error)
 	lua_resetthread(this->L);
 }
 
-bool ScriptFiber::TryDepend(IScriptFiber *other)
+bool ScriptFiber::TryDepend(IFiberHandle *other)
 {
-	_dependants.push_back(other->ToHandle());
+	_dependants.push_back(other);
 	return true;
 }

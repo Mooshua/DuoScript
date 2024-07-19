@@ -4,7 +4,6 @@
 
 #include "DuoMetamod.h"
 
-#include "mimalloc-new-delete.h"
 #include "Logging/Log.h"
 #include "Plugins/Plugin.h"
 #include "Duo.h"

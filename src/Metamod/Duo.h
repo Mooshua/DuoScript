@@ -8,6 +8,8 @@
 #include "iserver.h"
 #include "entitysystem.h"
 
+#include "IProfiler.h"
+
 #include "Loop/Loop.h"
 #include "Script/ScriptVM.h"
 #include "Logging/Log.h"

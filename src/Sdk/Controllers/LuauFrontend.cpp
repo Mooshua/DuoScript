@@ -39,6 +39,8 @@ LuauFileResolver::~LuauFileResolver()
 
 std::optional<Luau::SourceCode> LuauFileResolver::readSource(const Luau::ModuleName &name)
 {
+	DuoScope(LuauFrontend::ReadSource);
+
 	IScriptFiber* fiber = this->isolate->Get()->NewFiber();
 	IScriptInvoke* args;
 	fiber->TrySetup(this->readmethod, &args);
@@ -66,6 +68,8 @@ std::optional<Luau::SourceCode> LuauFileResolver::readSource(const Luau::ModuleN
 
 std::optional<Luau::ModuleInfo> LuauFileResolver::resolveModule(const Luau::ModuleInfo *context, Luau::AstExpr *expr)
 {
+	DuoScope(LuauFrontend::ResolveModule);
+
 	IScriptFiber* fiber = this->isolate->Get()->NewFiber();
 	IScriptInvoke* args;
 	fiber->TrySetup(this->resolvemethod, &args);
@@ -108,6 +112,8 @@ std::optional<Luau::ModuleInfo> LuauFileResolver::resolveModule(const Luau::Modu
 
 std::optional<std::string> LuauFileResolver::getEnvironmentForModule(const Luau::ModuleName &name) const
 {
+	DuoScope(LuauFrontend::ResolveEnvironment);
+
 	IScriptFiber* fiber = this->isolate->Get()->NewFiber();
 	IScriptInvoke* args;
 	fiber->TrySetup(this->envmethod, &args);
@@ -130,6 +136,8 @@ std::optional<std::string> LuauFileResolver::getEnvironmentForModule(const Luau:
 
 IScriptResult *LuauFrontendController::New(IScriptCall *call)
 {
+	DuoScope(LuauFrontend::New);
+
 	LuauFrontend entity;
 	Luau::Config config;
 
@@ -176,6 +184,8 @@ IScriptResult *LuauFrontendController::New(IScriptCall *call)
 
 IScriptResult *LuauFrontendController::Check(LuauFrontend *entity, IScriptCall *call)
 {
+	DuoScope(LuauFrontend::Check);
+
 	std::string name = std::string();
 	if (!call->ArgString(1, &name))
 		return call->Error("Expected argument 1 to be a string!");
@@ -189,6 +199,8 @@ IScriptResult *LuauFrontendController::Check(LuauFrontend *entity, IScriptCall *
 
 IScriptResult *LuauFrontendController::AddType(LuauFrontend *entity, IScriptCall *call)
 {
+	DuoScope(LuauFrontend::AddDefines);
+
 	//	Package name used for documentation
 	std::string name;
 	if (!call->ArgString(1, &name))

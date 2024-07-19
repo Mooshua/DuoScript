@@ -22,8 +22,11 @@ class IIsolateHandle;
 
 #include <string>
 
+#include "IProfiler.h"
 #include "ILoop.h"
 #include "IScriptMethod.h"
+
+#define ATOM_UNDEF -32768
 
 class IScriptResult
 {
@@ -99,7 +102,7 @@ public:
 	/// @brief Request another fiber be resumed when this one completes
 	///	The other fiber should already be yielded. The fiber will be invoked
 	///	with all args returned from this fiber.
-	virtual bool TryDepend(IScriptFiber* other) = 0;
+	virtual bool TryDepend(IFiberHandle *other) = 0;
 };
 
 ///	Resources for an isolate, such as require() resolving
@@ -107,7 +110,7 @@ class IIsolateResources
 {
 public:
 	///	@brief Get the name of the isolate
-	virtual const char* GetName() = 0;
+	virtual const char* GetName(int* length = nullptr) = 0;
 
 	///	@brief Get the resource at the specified path
 	virtual bool TryGetResource(const char* name, std::string* results) = 0;
@@ -143,6 +146,8 @@ public:
 	virtual void Initialize() = 0;
 
 	virtual IScriptIsolate* CreateIsolate(IIsolateResources* resources) = 0;
+
+	virtual int CreateAtom(const char* string) = 0;
 };
 
 class IIsolateHandle

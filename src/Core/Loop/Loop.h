@@ -8,6 +8,7 @@
 #include "uv.h"
 
 #include "ILoop.h"
+#include "IProfiler.h"
 
 class Loop : public virtual ILoop
 {

@@ -35,7 +35,7 @@ public:
 	///	Invoke this isolate
 	virtual IScriptReturn* Call(bool use);
 
-	virtual bool TryDepend(IScriptFiber* other);
+	virtual bool TryDepend(IFiberHandle *other);
 
 protected:
 	///	Report an error and unwind the stack

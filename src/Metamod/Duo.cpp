@@ -70,6 +70,12 @@ void Duo::OnStartupServer(const GameSessionConfiguration_t& config, ISource2Worl
 
 void Duo::OnGameFrame(bool simulating, bool first, bool last)
 {
+	//	Advance profiler
+	FrameMark;
+	tracy::SetThreadName("Main");
+
+	duo::Frame _("DuoScript");
+
 	//	Push events through the loop
 	g_Loop.RunOnce();
 

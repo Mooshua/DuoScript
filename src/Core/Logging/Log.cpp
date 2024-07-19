@@ -3,8 +3,10 @@
 // accessible by any user able to connect to a server running this program.
 
 #include <cstdarg>
+#include <iostream>
 #include <amtl/am-string.h>
 #include <Generic/StringMap.h>
+#include <IProfiler.h>
 
 #include "Log.h"
 
@@ -56,8 +58,9 @@
 
 
 #define PRINT_IMPL(message) \
-	/*if (g_Engine == nullptr)*/ \
-		printf("%s", message );  \
+	/*if (g_Engine == nullptr)*/  \
+        DuoScope(Log::PrintImpl); \
+		std::cout << message;   \
 	/*else*/ \
 		/*g_Engine->LogPrint( message )*/;
 
@@ -97,6 +100,7 @@ void Log::Tip(const char *system, const char *fmt, ...)
 
 void Log::ComponentEx(const char *system, Log::Status status, const char *fmt, va_list args)
 {
+	DuoScope(Log::Component);
 
 	std::string inner_message = ke::StringPrintfVa(fmt, args);
 	this->Sanitize(inner_message);
@@ -130,6 +134,8 @@ void Log::ComponentEx(const char *system, Log::Status status, const char *fmt, v
 
 void Log::MessageEx(const char *system, Log::Severity severity, const char *fmt, va_list args)
 {
+	DuoScope(Log::Message);
+
 	std::string inner_message = ke::StringPrintfVa(fmt, args);
 	this->Sanitize(inner_message);
 
@@ -141,6 +147,7 @@ void Log::MessageEx(const char *system, Log::Severity severity, const char *fmt,
 
 void Log::TipEx(const char *system, const char *fmt, va_list args)
 {
+	DuoScope(Log::Tip);
 
 	const char* tip_thing = Reset "[" ColorYellow "tip!" Reset "]" ColorYellow;
 
@@ -155,6 +162,8 @@ void Log::TipEx(const char *system, const char *fmt, va_list args)
 
 void Log::BlankEx(const char *fmt, va_list args)
 {
+	DuoScope(Log::Blank);
+
 	std::string inner_message = ke::StringPrintfVa(fmt, args);
 	this->Sanitize(inner_message);
 
@@ -191,6 +200,8 @@ const char *Log::ToString(Log::Severity severity)
 //	Prevent ANSI escape sequences from being written to the console
 void Log::Sanitize(std::string &line)
 {
+	DuoScope(Log::Sanitize);
+
 	for (int i = 0; i < line.length(); i++)
 	{
 		if (line.data()[i] == '\x1')

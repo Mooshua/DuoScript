@@ -23,6 +23,8 @@ ControllerInstance::~ControllerInstance()
 
 IScriptRef* ControllerInstance::Make(IScriptIsolate* vm, void** result, int size)
 {
+	DuoScope(ControllerInstance::Make);
+
 	ScriptIsolate* isolate = static_cast<ScriptIsolate*>(vm);
 
 	void *userdata = lua_newuserdatadtor(isolate->L, size, &ScriptControllerManager::OnDestroy);
@@ -42,9 +44,11 @@ IScriptRef* ControllerInstance::Make(IScriptIsolate* vm, void** result, int size
 
 IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* controller)
 {
-	IScriptRef* namecall = g_ScriptVM.NewMethod(&controller->_namecall);
-	IScriptRef* staticNamecall = g_ScriptVM.NewMethod(&controller->_namecallStatic);
-	IScriptRef* index = g_ScriptVM.NewMethod(&controller->_indexer);
+	DuoScope(ScriptControllerManager::Register);
+
+	IScriptRef* namecall = g_ScriptVM.NewMethod(&controller->_namecall, "Controller Namecall");
+	IScriptRef* staticNamecall = g_ScriptVM.NewMethod(&controller->_namecallStatic, "Controller Static Namecall");
+	IScriptRef* index = g_ScriptVM.NewMethod(&controller->_indexer, "Controller Indexer");
 
 	//	=====================================
 	//	Create new userdata for global object
@@ -106,6 +110,8 @@ IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* co
 
 void ScriptControllerManager::OnDestroy(void *userdata)
 {
+	DuoScope(ControllerInstance::OnDestroy);
+
 	IBaseScriptControllerEntity* entity = static_cast<IBaseScriptControllerEntity*>(userdata);
 
 	//	The controller instance can be killed, but this
@@ -120,6 +126,8 @@ void ScriptControllerManager::OnDestroy(void *userdata)
 
 void ScriptControllerManager::Destroy(IControllerInstance *instance)
 {
+	DuoScope(ScriptControllerManager::Destroy);
+
 	//	We should clear all tables referencing our controller
 	//	metatables. This allows the __namecall method to be garbage
 	//	collected, IF none of the plugins try and do anything shady by holding onto it.

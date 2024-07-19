@@ -10,6 +10,14 @@ add_subdirectory(zip)
 # mimalloc
 add_subdirectory(mimalloc)
 
+# tracy
+set(TRACY_NO_CALLSTACK ON)
+set(TRACY_NO_CRASH_HANDLER ON)
+set(TRACY_ON_DEMAND ON)
+set(TRACY_ONLY_LOCALHOST ON)
+
+add_subdirectory(tracy)
+
 # luau
 add_subdirectory(luau)
 # use mimalloc allocator

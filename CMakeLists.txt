@@ -4,6 +4,13 @@ project(DuoScript C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
+# Ugh
+# Thanks, https://stackoverflow.com/questions/13920072/how-to-always-run-command-when-building-regardless-of-any-dependency
+add_custom_command(
+        OUTPUT always_rebuild
+        COMMAND cmake -E echo
+)
+
 add_subdirectory(pkg)
 
 function(create_zip output_file input_files working_dir)
@@ -11,7 +18,7 @@ function(create_zip output_file input_files working_dir)
             COMMAND ${CMAKE_COMMAND} -E tar "cf" "${output_file}" --format=zip -- ${input_files}
             WORKING_DIRECTORY "${working_dir}"
             OUTPUT  "${output_file}"
-            DEPENDS ${input_files}
+            DEPENDS ${input_files} always_rebuild
             COMMENT "Zipping to ${output_file}."
     )
 endfunction()
@@ -63,10 +70,13 @@ include_directories(
         pkg/amtl
 
         pkg/zip/src
+
+        pkg/tracy/public/tracy
 )
 
-
 include_directories(public src)
+
+add_compile_definitions(TRACY_ENABLE)
 
 #   ===========================================
 #   Duo Core
@@ -96,6 +106,8 @@ set (duo_core_sources
         src/Core/Files/Files.cpp
         src/Core/Modules/ModuleManager.cpp
         src/Core/Modules/ModuleInstance.cpp
+
+        src/Core/Alloc.cpp
 )
 
 add_library(duo_core STATIC
@@ -115,10 +127,10 @@ target_include_directories(duo_core_independent PRIVATE src/Core)
 target_compile_definitions(duo_core PRIVATE DUO_DEBUG COMPILING_DUOSCRIPT)
 target_compile_definitions(duo_core_independent PUBLIC DUO_DEBUG COMPILING_DUOSCRIPT DUO_INDEPENDENT)
 
-target_link_libraries(duo_core uv_a mimalloc-static zip)
+target_link_libraries(duo_core uv_a mimalloc-static zip TracyClient)
 target_link_libraries(duo_core Luau.VM Luau.Compiler Luau.CodeGen)
 
-target_link_libraries(duo_core_independent uv_a mimalloc-static zip)
+target_link_libraries(duo_core_independent uv_a mimalloc-static zip TracyClient)
 target_link_libraries(duo_core_independent Luau.VM Luau.Compiler Luau.CodeGen)
 
 target_link_libraries(duo_core AVX HOTPATCH MOARDEBUG)
@@ -245,7 +257,7 @@ add_executable(duokit
 )
 
 
-file(GLOB duokit_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/Sdk/Provider/*")
+file(GLOB duokit_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Sdk/Provider/*")
 create_zip("${CMAKE_CURRENT_BINARY_DIR}/duokit.duo" "${duokit_sources}" "${CMAKE_CURRENT_SOURCE_DIR}/src/Sdk/Provider")
 add_custom_target(duokit_provider ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/duokit.duo")
 

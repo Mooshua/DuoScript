@@ -24,3 +24,6 @@
 [submodule "pkg/httplib"]
 	path = pkg/httplib
 	url = https://github.com/yhirose/cpp-httplib
+[submodule "pkg/tracy"]
+	path = pkg/tracy
+	url = https://github.com/wolfpld/tracy

@@ -6,6 +6,8 @@
 #include "Logging/Log.h"
 #include "Helpers/Path.h"
 
+#include <iostream>
+
 #include "Threading/FiberController.h"
 #include "Files/FileSystemController.h"
 #include "Generic/LogController.h"
@@ -14,6 +16,7 @@
 #include "Files/ZipController.h"
 #include "Memory/PointerController.h"
 
+duo::Plot g_PendingEvents("Pending Events", tracy::PlotFormatType::Number);
 Main g_Main;
 ILogger* g_DuoLog;
 ILoop* g_DuoLoop;
@@ -21,6 +24,7 @@ ILoop* g_DuoLoop;
 int main(int argc, char **argv)
 {
 	uv_setup_args(argc, argv);
+	getchar();
 
 	//	This is to provide binary build compatibility
 	//	with duo_logic
@@ -67,5 +71,14 @@ void Main::Initialize()
 
 void Main::Run()
 {
-	uv_run(g_Loop.AsLoop(), UV_RUN_DEFAULT);
+	while (true) {
+		duo::Frame _("Loop");
+
+		uv_run(g_Loop.AsLoop(), UV_RUN_ONCE);
+
+		uv_metrics_t metrics;
+		uv_metrics_info(g_Loop.AsLoop(), &metrics);
+
+		g_PendingEvents.Set(metrics.events_waiting);
+	}
 }

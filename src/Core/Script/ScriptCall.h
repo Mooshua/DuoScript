@@ -94,7 +94,7 @@ public:
 	int GetLength() override;
 
 	///	Get the current namecall, if there is one.
-	bool TryGetNamecall(char* result, int maxlen) override;
+	bool TryGetNamecall(char* result, int* atom, int maxlen) override;
 
 	bool ArgBool(int slot, bool *result) override;
 	bool ArgString(int slot, char* result, int maxlen, int* written) override;

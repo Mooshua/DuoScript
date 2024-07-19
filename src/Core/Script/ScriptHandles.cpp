@@ -12,6 +12,8 @@ IsolateHandle::IsolateHandle(int id)
 
 bool IsolateHandle::Exists()
 {
+	DuoScope(IsolateHandle::Exists);
+
 	return g_ScriptVM.GetIsolate(isolate_id) != nullptr;
 }
 
@@ -22,6 +24,8 @@ IScriptIsolate * IsolateHandle::Get()
 
 ScriptIsolate *IsolateHandle::GetInternal()
 {
+	DuoScope(IsolateHandle::Get);
+
 	return g_ScriptVM.GetIsolate(isolate_id);
 }
 
@@ -33,6 +37,8 @@ FiberHandle::FiberHandle(IsolateHandle* parent, int id)
 
 bool FiberHandle::Exists()
 {
+	DuoScope(FiberHandle::Exists);
+
 	if (!isolate->Exists())
 		return false;
 
@@ -46,6 +52,8 @@ IScriptFiber *FiberHandle::Get()
 
 ScriptFiber *FiberHandle::GetInternal()
 {
+	DuoScope(FiberHandle::Get);
+
 	return isolate->GetInternal()->GetFiber(fiber_id);
 }
 

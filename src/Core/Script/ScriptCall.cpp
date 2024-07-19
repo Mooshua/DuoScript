@@ -18,6 +18,8 @@ ScriptCall::ScriptCall(ScriptFiber* parent)
 
 void *ScriptCall::GetOpaqueSelf()
 {
+	DuoScope(ScriptCall::GetOpaqueSelf);
+
 	if (1 > stack_push)
 		return false;
 
@@ -51,9 +53,11 @@ int ScriptCall::GetLength()
 	return this->stack_push;
 }
 
-bool ScriptCall::TryGetNamecall(char *result, int maxlen)
+bool ScriptCall::TryGetNamecall(char *result, int* atom, int maxlen)
 {
-	const char* namecall = lua_namecallatom(this->parent->L, nullptr);
+	DuoScope(ScriptCall::TryGetNamecall);
+
+	const char* namecall = lua_namecallatom(this->parent->L, atom);
 
 	//	No namecall?
 	if (namecall == nullptr)
@@ -66,6 +70,7 @@ bool ScriptCall::TryGetNamecall(char *result, int maxlen)
 #define CREATE_ACCESSOR(name, type, check, get) \
 	bool name (int slot, type *result )            \
 	{                                              \
+        DuoScope(name);                                        \
 		if (slot > stack_push)						   \
 			return false;                                \
         slot += this->has_self; /* Remove self pointer */  \
@@ -80,6 +85,7 @@ bool ScriptCall::TryGetNamecall(char *result, int maxlen)
 #define CREATE_PUSHER(name, type, push) \
 	void name (type value)                 \
     {                                   \
+        DuoScope(name);                                \
 		lua_checkstack(this->parent->L, 1); \
 		stack_pop++;                          \
 		push (this->parent->L, value);\
@@ -100,6 +106,8 @@ CREATE_PUSHER(ScriptCall::PushUnsigned, unsigned, lua_pushunsigned );
 
 bool ScriptCall::ArgObject(int slot, IScriptRef** result)
 {
+	DuoScope(ScriptCall::ArgObject);
+
 	if (slot > stack_push)
 		return false;
 
@@ -116,6 +124,8 @@ bool ScriptCall::ArgObject(int slot, IScriptRef** result)
 
 void ScriptCall::PushObject(IScriptRef *value)
 {
+	DuoScope(ScriptCall::PushObject);
+
 	lua_checkstack(this->parent->L, 1);
 
 	stack_pop++;
@@ -124,6 +134,8 @@ void ScriptCall::PushObject(IScriptRef *value)
 
 bool ScriptCall::ArgString(int slot, char* result, int maxlen, int* written)
 {
+	DuoScope(ScriptCall::ArgString);
+
 	if (slot > stack_push)
 		return false;
 
@@ -150,6 +162,8 @@ bool ScriptCall::ArgString(int slot, char* result, int maxlen, int* written)
 
 bool ScriptCall::ArgString(int slot, std::string *result)
 {
+	DuoScope(ScriptCall::ArgString);
+
 	if (slot > stack_push)
 		return false;
 
@@ -168,6 +182,8 @@ bool ScriptCall::ArgString(int slot, std::string *result)
 
 void ScriptCall::PushString(const char *value, int length)
 {
+	DuoScope(ScriptCall::PushString);
+
 	lua_checkstack(this->parent->L, 1);
 
 	if (length == -1)
@@ -180,17 +196,23 @@ void ScriptCall::PushString(const char *value, int length)
 
 IIsolateHandle *ScriptCall::GetIsolate()
 {
+	DuoScope(ScriptCall::GetIsolate);
+
 	return this->parent->parent->ToHandle();
 }
 
 IFiberHandle *ScriptCall::GetFiber()
 {
+	DuoScope(ScriptCall::GetFiber);
+
 	return this->parent->ToHandle();
 }
 
 
 IScriptResult *ScriptCall::Error(const char *error, ...)
 {
+	DuoScope(ScriptCall::Error);
+
 	//	When debugging, it can be difficult to tell where
 	//	an error comes from if this is not breakpointed.
 	//	Place a breakpoint somewhere in here to see where
@@ -226,6 +248,8 @@ IScriptResult *ScriptCall::Return()
 
 bool ScriptCall::ArgMethod(int slot, IScriptMethod **result)
 {
+	DuoScope(ScriptCall::ArgMethod);
+
 	if (slot > stack_push)
 		return false;
 
@@ -245,6 +269,8 @@ bool ScriptCall::ArgMethod(int slot, IScriptMethod **result)
 
 bool ScriptCall::ArgTable(int slot, IScriptObject **result)
 {
+	DuoScope(ScriptCall::ArgTable);
+
 	if (slot > stack_push)
 		return false;
 
@@ -265,6 +291,8 @@ bool ScriptCall::ArgTable(int slot, IScriptObject **result)
 
 bool ScriptCall::ArgBuffer(int slot, void **result, size_t *size)
 {
+	DuoScope(ScriptCall::ArgBuffer);
+
 	if (slot > stack_push)
 		return false;
 
@@ -284,6 +312,8 @@ bool ScriptCall::ArgBuffer(int slot, void **result, size_t *size)
 
 bool ScriptCall::ArgBuffer(int slot, std::string *result)
 {
+	DuoScope(ScriptCall::ArgBuffer);
+
 	if (slot > stack_push)
 		return false;
 
@@ -301,6 +331,8 @@ bool ScriptCall::ArgBuffer(int slot, std::string *result)
 
 bool ScriptCall::ArgOpaqueEntity(int slot, IBaseScriptControllerEntity **userdata)
 {
+	DuoScope(ScriptCall::ArgOpaqueEntity);
+
 	if (slot > stack_push)
 		return false;
 
@@ -317,10 +349,12 @@ bool ScriptCall::ArgOpaqueEntity(int slot, IBaseScriptControllerEntity **userdat
 
 void ScriptCall::PushVarArgs(IScriptPolyglotView *from, int after)
 {
+	DuoScope(ScriptCall::PushVarArgs);
+
 	ScriptCall* friend_from = static_cast<ScriptCall *>( from->ToPolyglot() );
 	lua_checkstack(this->parent->L, friend_from->GetLength());
 
-	for (int arg = after; arg < friend_from->GetLength(); arg++)
+	for (int arg = after; arg <= friend_from->GetLength(); arg++)
 	{
 		//	Use xpush to toss across lua_states
 		lua_xpush(friend_from->parent->L, this->parent->L, arg + friend_from->has_self);
@@ -339,6 +373,8 @@ void ScriptCall::PushVarArgs(IScriptPolyglotView *from, int after)
 
 void ScriptCall::PushArg(IScriptPolyglotView *from, int arg)
 {
+	DuoScope(ScriptCall::PushArg);
+
 	ScriptCall* friend_from = static_cast<ScriptCall *>( from->ToPolyglot() );
 	lua_checkstack(this->parent->L, 1);
 
@@ -352,6 +388,8 @@ void ScriptCall::PushArg(IScriptPolyglotView *from, int arg)
 
 void ScriptCall::PushBuffer(void *data, size_t length)
 {
+	DuoScope(ScriptCall::PushBuffer);
+
 	lua_checkstack(this->parent->L, 1);
 	void* buffer = lua_newbuffer(this->parent->L, length);
 	memcpy(buffer, data, length);

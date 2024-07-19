@@ -22,6 +22,8 @@ WorkHandle::WorkHandle(void *input, ILoop::WorkProcessor processor, ILoop::WorkR
 
 void WorkHandle::OnWork(uv_work_t *request)
 {
+	DuoScope(WorkHandle::OnWork);
+
 	WorkHandle* self = static_cast<WorkHandle *>(request->data);
 
 	//	We have already been invoked, so don't try and cancel us now.
@@ -33,6 +35,8 @@ void WorkHandle::OnWork(uv_work_t *request)
 
 void WorkHandle::OnFinish(uv_work_t *request, int status)
 {
+	DuoScope(WorkHandle::OnFinish);
+
 	WorkHandle* self = static_cast<WorkHandle *>(request->data);
 
 	if (status != UV_ECANCELED && !self->_killed)
@@ -45,6 +49,8 @@ void WorkHandle::OnFinish(uv_work_t *request, int status)
 
 void WorkHandle::Kill()
 {
+	DuoScope(WorkHandle::Kill);
+
 	if (_killed)
 		return;
 

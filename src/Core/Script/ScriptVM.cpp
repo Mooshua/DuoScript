@@ -12,6 +12,12 @@
 #include "Logging/Log.h"
 #include <amtl/am-string.h>
 
+duo::Plot g_FiberCountPlot("Fiber Count", tracy::PlotFormatType::Number );
+duo::Plot g_IsolateCountPlot("Fiber Count", tracy::PlotFormatType::Number );
+duo::Plot g_Atoms("Atom Count", tracy::PlotFormatType::Number);
+
+ke::StringMap<int16_t> ScriptVM::_atoms;
+int16_t ScriptVM::_nextAtom = ATOM_UNDEF + 1;
 
 ScriptVM g_ScriptVM;
 
@@ -20,6 +26,8 @@ ScriptVM::ScriptVM()
 	//	We CANNOT create a Lua_State here because
 	//	the constructor is running in the global initialization
 	//	context, and Luau isn't set up yet!
+
+	_atoms.init(65536);
 }
 
 lua_State* ScriptVM::CreateBox(IScriptRef** box_ref)
@@ -50,6 +58,8 @@ ScriptIsolate::ScriptIsolate(ScriptVM *parent, IIsolateResources* resources)
 	//	if something does, then that should be an error.
 	//	use fibers for all invocations!
 	lua_setthreaddata(L, nullptr);
+
+	_parent->_active_isolates++;
 }
 
 ScriptIsolate::~ScriptIsolate()
@@ -66,11 +76,14 @@ ScriptIsolate::~ScriptIsolate()
 
 	//	Set ourselves to nullptr in the VM
 	_parent->_isolates[isolate_id] = nullptr;
+	_parent->_active_isolates--;
 }
 
 bool ScriptIsolate::TryLoad(const char *name, std::string data, IScriptMethod **method, char *error,
 							int maxlength)
 {
+	DuoScope(ScriptIsolate::TryLoad);
+
 	int status = luau_load(L, name, data.data(), data.length(), 0);
 
 	if (status == LUA_OK)
@@ -102,6 +115,7 @@ bool ScriptIsolate::TryLoad(const char *name, std::string data, IScriptMethod **
 
 IScriptFiber *ScriptIsolate::NewFiber()
 {
+	DuoScope(ScriptIsolate::NewFiber);
 
 	lua_State *thread = lua_newthread(this->L);
 	IScriptRef* ref = new ScriptRef(this->L, lua_ref(this->L, -1));
@@ -124,6 +138,8 @@ ScriptFiber *ScriptIsolate::GetFiber(int id)
 
 IsolateHandle *ScriptIsolate::ToHandleInternal()
 {
+	DuoScope(ScriptIsolate::ToHandle);
+
 	return new IsolateHandle(isolate_id);
 }
 
@@ -154,6 +170,8 @@ void *ScriptVM::Alloc(void *userdata, void *pointer, size_t oldsize, size_t news
 
 int ScriptVM::CFunction(lua_State *L)
 {
+	DuoScope(ScriptVM::CFunction);
+
 	int argc = lua_gettop(L);
 
 	//	Get callback upvalue
@@ -177,6 +195,7 @@ int ScriptVM::CFunction(lua_State *L)
 	if (result == nullptr)
 		luaL_error(L, "Null ScriptResult returned from native code");
 
+	DuoScope(ScriptVM::CFunction Cleanup);
 	switch (result->strategy)
 	{
 		default:
@@ -191,8 +210,10 @@ int ScriptVM::CFunction(lua_State *L)
 	}
 }
 
-IScriptRef *ScriptVM::NewMethod(fastdelegate::FastDelegate<IScriptResult *, IScriptCall *>* callback)
+IScriptRef *ScriptVM::NewMethod(fastdelegate::FastDelegate<IScriptResult *, IScriptCall *> *callback, const char *name)
 {
+	DuoScope(ScriptVM::NewMethod);
+
 	lua_pushlightuserdatatagged(L, callback, 0);
 	lua_pushcclosurek(L, &ScriptVM::CFunction, "ScriptVM::CFunction", 1, nullptr);
 
@@ -212,6 +233,9 @@ void ScriptVM::Initialize()
 {
 	this->L = lua_newstate(&ScriptVM::Alloc, nullptr);
 	this->controllers = new ScriptControllerManager(this->L);
+
+	auto callbacks = lua_callbacks(L);
+	callbacks->useratom = &ScriptVM::UserAtom;
 
 	luaL_openlibs(this->L);
 
@@ -277,6 +301,8 @@ IScriptIsolate *ScriptVM::CreateIsolate(IIsolateResources* resources)
 
 ScriptIsolate *ScriptVM::CreateIsolateInternal(IIsolateResources* resources)
 {
+	DuoScope(ScriptVM::CreateIsolate);
+
 	ScriptIsolate* isolate = new ScriptIsolate(this, resources);
 	_isolates.push_back(isolate);
 
@@ -289,6 +315,8 @@ ScriptIsolate *ScriptVM::CreateIsolateInternal(IIsolateResources* resources)
 
 int ScriptVM::LuaRequire(lua_State *L)
 {
+	DuoScope(ScriptVM::LuaRequire);
+
 	std::string originalName = luaL_checkstring(L, -1);
 	std::replace( originalName.begin(), originalName.end(), '.', '/');
 
@@ -312,15 +340,46 @@ int ScriptVM::LuaRequire(lua_State *L)
 	//	Create a fiber to run the loader
 	IScriptFiber* newFiber = isolate->NewFiber();
 	newFiber->TrySetup(method);
+	newFiber->TryDepend(fiber->ToHandle());
+
 	IScriptReturn* result = newFiber->Call(true);
 
 	IScriptRef* module;
-	if (!result->ArgObject(1, &module))
-		luaL_error(L, "Module %s must return exactly one value!", name.c_str());
+//	if (!result->ArgObject(1, &module))
+//		luaL_error(L, "Module %s must return exactly one value!", name.c_str());
+//	lua_getref(L, module->AsReferenceId());
 
-	lua_getref(L, module->AsReferenceId());
+//	delete newFiber;
+	return lua_yield(L, 1);
+}
 
-	delete newFiber;
-	return 1;
+int ScriptVM::CreateAtom(const char *string)
+{
+	int atom;
+	lua_pushstring(L, string);
+	lua_tostringatom(L, -1, &atom);
+	lua_pop(L, 1);
+	return atom;
+}
+
+int16_t ScriptVM::UserAtom(const char *s, size_t l)
+{
+	DuoScope(ScriptVM::UserAtom);
+	auto lookup = _atoms.find(s);
+
+	if (!lookup.found())
+	{
+		DuoScope(ScriptVM::UserAtom - New Atom);
+
+		auto atom = _nextAtom++;
+		auto insert = _atoms.findForAdd(s);
+		_atoms.add(insert, s, atom);
+
+		g_Atoms.Set(atom + 32768);
+
+		return atom;
+	}
+
+	return lookup->value;
 }
 

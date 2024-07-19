@@ -10,15 +10,17 @@ FileController g_FileController;
 
 void FileRequest::Callback(uv_fs_t *req)
 {
-	FileRequest* self = static_cast<FileRequest *>(req->data);
+	DuoScope(FileRequest::Callback);
 
-	if (!self->fiber->Exists())
+	FileRequest* self = static_cast<FileRequest *>(req->data);
+	IScriptFiber* fiber = self->fiber->Get();
+
+	if (!fiber)
 	{
 		delete self;
 		return g_DuoLog->Message("Filesystem", ILogger::SEV_WARN, "Fiber handle closed while yielding for filesystem");
 	}
 
-	IScriptFiber* fiber = self->fiber->Get();
 	IScriptInvoke* args;
 
 	if (!fiber->TryContinue(&args))
@@ -42,15 +44,17 @@ void FileRequest::Callback(uv_fs_t *req)
 
 void FileOpenRequest::Callback(uv_fs_t *req)
 {
-	FileOpenRequest* self = static_cast<FileOpenRequest *>(req->data);
+	DuoScope(FileOpenRequest::Callback);
 
-	if (!self->fiber->Exists())
+	FileOpenRequest* self = static_cast<FileOpenRequest *>(req->data);
+	IScriptFiber* fiber = self->fiber->Get();
+
+	if (!fiber)
 	{
 		delete self;
 		return g_DuoLog->Message("Filesystem", ILogger::SEV_WARN, "Fiber handle closed while yielding for filesystem open");
 	}
 
-	IScriptFiber* fiber = self->fiber->Get();
 	IScriptInvoke* args;
 
 	if (!fiber->TryContinue(&args))
@@ -86,8 +90,47 @@ void FileOpenRequest::Callback(uv_fs_t *req)
 	delete self;
 }
 
+void FileStatRequest::Callback(uv_fs_t *req)
+{
+	DuoScope(FileStatRequest::Callback);
+
+	FileStatRequest* self = static_cast<FileStatRequest *>(req->data);
+	IScriptFiber* fiber = self->fiber->Get();
+
+	if (!fiber)
+	{
+		delete self;
+		return g_DuoLog->Message("Filesystem", ILogger::SEV_WARN, "Fiber handle closed while yielding for filesystem open");
+	}
+
+	IScriptInvoke* args;
+
+	if (!fiber->TryContinue(&args))
+	{
+		delete self;
+		return g_DuoLog->Message("Filesystem", ILogger::SEV_WARN, "Fiber handle could not be resumed from filesystem open yield");
+	}
+
+	uv_stat_t* stat = static_cast<uv_stat_t *>(req->ptr);
+	bool success = (req->result >= 0);
+
+	//	"Success" return
+	args->PushBool(success);
+
+	if (success)
+		args->PushUnsigned(stat->st_size);
+	else
+		args->PushString( uv_err_name(req->result) );
+
+	fiber->Call(false);
+
+	delete self;
+}
+
 IScriptResult *FileController::Open(IScriptCall *call)
 {
+	DuoScope(File::Open);
+
 	char path[256];
 	if (!call->ArgString(1, path, sizeof(path)))
 		call->Error("Expected argument 1 to be a string!");
@@ -97,8 +140,11 @@ IScriptResult *FileController::Open(IScriptCall *call)
 	call->ArgBool(2, &create);
 
 	FileOpenRequest* request = new FileOpenRequest(call->GetFiber(), this);
-	uv_fs_open(g_DuoLoop->AsLoop(), &request->request, path, UV_FS_O_RDWR | (create ? UV_FS_O_CREAT : 0), 0, &FileOpenRequest::Callback);
-
+	{
+		DuoScope(uv_fs_open);
+		uv_fs_open(g_DuoLoop->AsLoop(), &request->request, path, UV_FS_O_RDWR | (create ? UV_FS_O_CREAT : 0), 0,
+				   &FileOpenRequest::Callback);
+	}
 	return call->Await();
 }
 
@@ -107,6 +153,8 @@ IScriptResult *FileController::Open(IScriptCall *call)
 ///	optional offset - the location to read from. default to end of last read
 IScriptResult *FileController::Read(FileEntity *file, IScriptCall *call)
 {
+	DuoScope(File::Read);
+
 	unsigned length;
 	int offset = -1;
 
@@ -124,8 +172,12 @@ IScriptResult *FileController::Read(FileEntity *file, IScriptCall *call)
 	request->buffer.base = static_cast<char *>(mi_zalloc(length));
 	request->buffer.len	= length;
 
-	//	Queue read request & yield for callback
-	uv_fs_read(g_DuoLoop->AsLoop(), &request->request, file->file, &request->buffer, 1, offset, &FileRequest::Callback);
+	{
+		DuoScope(uv_fs_read);
+		//	Queue read request & yield for callback
+		uv_fs_read(g_DuoLoop->AsLoop(), &request->request, file->file, &request->buffer, 1, offset,
+				   &FileRequest::Callback);
+	}
 	return call->Await();
 }
 
@@ -134,6 +186,8 @@ IScriptResult *FileController::Read(FileEntity *file, IScriptCall *call)
 ///	optional offset - the location to write the content. default to end of file.
 IScriptResult *FileController::Write(FileEntity* file, IScriptCall *call)
 {
+	DuoScope(File::Write);
+
 	int offset = -1;
 	char* buffer;
 	size_t length;
@@ -153,12 +207,30 @@ IScriptResult *FileController::Write(FileEntity* file, IScriptCall *call)
 
 	memcpy(request->buffer.base, buffer, length);
 
-	uv_fs_write(g_DuoLoop->AsLoop(), &request->request, file->file, &request->buffer, 1, offset, &FileRequest::Callback);
+	{
+		DuoScope(uv_fs_write);
+		uv_fs_write(g_DuoLoop->AsLoop(), &request->request, file->file, &request->buffer, 1, offset,
+					&FileRequest::Callback);
+	}
 	return call->Await();
 }
 
+
+IScriptResult *FileController::Length(FileEntity *file, IScriptCall *call)
+{
+	DuoScope(File::Length);
+
+	FileStatRequest* request = new FileStatRequest(call->GetFiber());
+
+	uv_fs_fstat(g_DuoLoop->AsLoop(), &request->request, file->file, &FileStatRequest::Callback);
+	return call->Await();
+}
+
+
 IScriptResult *FileController::GetFiles(IScriptCall *call)
 {
+	DuoScope(File::GetFiles);
+
 	std::vector<std::string> files;
 	std::string path = "";
 	call->ArgString(1, &path);
@@ -174,6 +246,8 @@ IScriptResult *FileController::GetFiles(IScriptCall *call)
 
 IScriptResult *FileController::GetDirectories(IScriptCall *call)
 {
+	DuoScope(File::GetDirs);
+
 	std::vector<std::string> files;
 	std::string path = "";
 	call->ArgString(1, &path);
@@ -186,3 +260,5 @@ IScriptResult *FileController::GetDirectories(IScriptCall *call)
 
 	return call->Return();
 }
+
+

@@ -103,7 +103,7 @@ public:
 	virtual void* GetOpaqueSelf() = 0;
 
 	///	Get the current namecall, if there is one.
-	virtual bool TryGetNamecall(char* result, int maxlen) = 0;
+	virtual bool TryGetNamecall(char* result, int* atom, int maxlen) = 0;
 
 
 public:

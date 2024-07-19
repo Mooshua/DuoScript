@@ -51,6 +51,27 @@ public:
 	IFiberHandle* fiber;
 };
 
+class FileStatRequest
+{
+public:
+	FileStatRequest(IFiberHandle* fiber)
+	{
+		this->request.data = this;
+		this->fiber = fiber;
+	}
+	~FileStatRequest()
+	{
+		uv_fs_req_cleanup(&this->request);
+
+		delete this->fiber;
+	}
+	static void Callback(uv_fs_t *req);
+public:
+	uv_fs_t request;
+
+	IFiberHandle* fiber;
+};
+
 class FileOpenRequest
 {
 public:
@@ -104,6 +125,7 @@ public:
 
 		CONTROLLER_METHOD(Read, &FileController::Read);
 		CONTROLLER_METHOD(Write, &FileController::Write);
+		CONTROLLER_METHOD(Length, &FileController::Length);
 	}
 
 	IScriptResult* Open(IScriptCall* call);
@@ -113,6 +135,7 @@ public:
 
 	IScriptResult* Read(FileEntity* file, IScriptCall* call);
 	IScriptResult* Write(FileEntity* file, IScriptCall* call);
+	IScriptResult* Length(FileEntity* file, IScriptCall* call);
 
 };
 

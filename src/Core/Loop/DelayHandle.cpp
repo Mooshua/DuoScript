@@ -19,12 +19,16 @@ DelayHandle::DelayHandle(ILoop::Delay callback, Loop *loop)
 
 DelayHandle::~DelayHandle()
 {
+	DuoScope(DelayHandle::Destroy);
+
 	if (!_killed && _handle != nullptr)
 		uv_close(reinterpret_cast<uv_handle_t *>(_handle), &Loop::OnDeallocate);
 }
 
 void DelayHandle::Kill()
 {
+	DuoScope(DelayHandle::Kill);
+
 	if (!_killed && _handle != nullptr)
 		uv_close(reinterpret_cast<uv_handle_t *>(_handle), &Loop::OnDeallocate);
 
@@ -34,6 +38,8 @@ void DelayHandle::Kill()
 
 bool DelayHandle::TryDelay(uint64_t milliseconds)
 {
+	DuoScope(DelayHandle::TryDelay);
+
 	if (_killed || _handle == nullptr)
 		return false;
 
@@ -56,6 +62,8 @@ uint64_t DelayHandle::Remaining()
 
 void DelayHandle::OnDelay(uv_timer_t *handle)
 {
+	DuoScope(DelayHandle::OnDelay);
+
 	DelayHandle* self = static_cast<DelayHandle *>(handle->data);
 
 	if (self->_callback)

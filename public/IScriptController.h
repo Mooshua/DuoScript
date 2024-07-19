@@ -10,6 +10,7 @@
 #include "Generic/StringMap.h"
 #include "Generic/StringLiteral.h"
 #include "IScript.h"
+#include "Generic/IntMap.h"
 
 class IBaseScriptController;
 class IBaseScriptControllerEntity;
@@ -172,6 +173,8 @@ public:
 	IScriptController()
 	{
 		_entityCallbacks.init();
+		_fastEntityCallbacks.init();
+
 		_staticCallbacks.init();
 
 		_entityGet.init();
@@ -280,29 +283,47 @@ protected:
 	/// Handle a script call on this entity
 	IScriptResult* Namecall(IScriptCall* namecall) override
 	{
+		DuoScope(ScriptController::Dispatch);
+
 		char methodName[256];
-		if (!namecall->TryGetNamecall(methodName, sizeof(methodName)))
+		int atom;
+
+		if (!namecall->TryGetNamecall(methodName, &atom, sizeof(methodName)))
 			return namecall->Error("Not a namecall!");
-
-		auto lookup = _entityCallbacks.find(methodName);
-
-		if (!lookup.found())
-			return namecall->Error("invalid namecall %s", methodName);
-
-		MethodCallback method = lookup->value;
 
 		Entity* self = namecall->GetSelf<Userdata>()->AsEntity();
 		if (self == nullptr)
 			return namecall->Error("null entity");
 
-		return method(self, namecall);
+		//	Fast-path: Do we have a known atom for this namecall?
+		if (atom != ATOM_UNDEF)
+		{
+			auto atomLookup = _fastEntityCallbacks.find(atom);
+
+			if (atomLookup.found())
+				return atomLookup->value(self, namecall);
+		}
+
+		DuoScope(ScriptController::Dispatch - Slow Path);
+		auto lookup = _entityCallbacks.find(methodName);
+
+		if (!lookup.found())
+			return namecall->Error("invalid namecall %s", methodName);
+
+		//	We have a string for this but no atom yet.
+		//	Let's patch the atom in now:
+		_fastEntityCallbacks.add(_fastEntityCallbacks.findForAdd(atom), atom, lookup->value);
+
+		return lookup->value(self, namecall);
 	}
 
 	///	Handle a script call on this controller
 	IScriptResult* NamecallStatic(IScriptCall* namecall) override
 	{
+		DuoScope(ScriptController::Dispatch);
+
 		char methodName[256];
-		if (!namecall->TryGetNamecall(methodName, sizeof(methodName)))
+		if (!namecall->TryGetNamecall(methodName, nullptr, sizeof(methodName)))
 			return namecall->Error("Not a namecall!");
 
 		auto lookup = _staticCallbacks.find(methodName);
@@ -318,6 +339,8 @@ private:
 
 	//ke::StringMap<MethodCallback> _entityCallbacks;
 	ke::StringMap<MethodCallback> _entityCallbacks;
+	ke::IntMap<MethodCallback> _fastEntityCallbacks;
+
 	ke::StringMap<StaticMethodCallback> _staticCallbacks;
 
 	ke::StringMap<Getter> _entityGet;

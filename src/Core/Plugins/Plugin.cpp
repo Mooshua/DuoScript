@@ -15,7 +15,8 @@ Plugin::~Plugin()
 
 Plugin::Plugin(const char *path, PluginManager* parent, int id)
 {
-	this->_name = path;
+	this->_path = path;
+	this->_name = this->_path.substr(this->_path.find_last_of("/\\"));
 
 	this->_parent = parent;
 	this->_id = id;
@@ -39,7 +40,7 @@ bool Plugin::TryGetCodeResource(const char *name, std::string *results)
 	Luau::CompileOptions opts;
 	opts.coverageLevel = 2;
 	opts.debugLevel = 2;
-	opts.optimizationLevel = 0;
+	opts.optimizationLevel = 2;
 
 	//	Now compile with results as output
 	*results = Luau::compile(code, opts);
@@ -125,9 +126,12 @@ void Plugin::Stop()
 	delete _isolate;
 }
 
-const char *Plugin::GetName()
+const char *Plugin::GetName(int* length)
 {
-	return this->_name.c_str() + this->_name.rfind('/');
+	if (length != nullptr)
+		*length = this->_name.length();
+
+	return this->_name.c_str();
 }
 
 

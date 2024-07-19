@@ -34,8 +34,11 @@ public:
 
 	void OnResume(IDelayHandle* arg)
 	{
-		if (_handle->Exists())
-			_handle->Get()->Call(false);
+		DuoScope(FiberController::SleepResume);
+
+		IScriptFiber* fiber = _handle->Get();
+		if (fiber)
+			fiber->Call(false);
 
 		delete _handle;
 		delete arg;
@@ -58,6 +61,7 @@ public:
 		CONTROLLER_STATIC_METHOD(Sleep, &FiberController::Sleep);
 
 		CONTROLLER_METHOD(Resume, &FiberController::Resume);
+		CONTROLLER_METHOD(Depend, &FiberController::Depend);
 	}
 
 public:
@@ -67,6 +71,7 @@ public:
 	IScriptResult* Sleep(IScriptCall* args);
 
 	IScriptResult* Resume(FiberEntity* entity, IScriptCall* args);
+	IScriptResult* Depend(FiberEntity* entity, IScriptCall* args);
 };
 
 extern FiberController g_FiberController;

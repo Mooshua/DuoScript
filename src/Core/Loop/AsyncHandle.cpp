@@ -19,6 +19,8 @@ AsyncHandle::AsyncHandle(ILoop::Async callback, Loop *loop)
 
 AsyncHandle::~AsyncHandle()
 {
+	DuoScope(AsyncHandle::Destroy);
+
 	//	Delete the handle if we haven't already
 	if (!_killed && _handle != nullptr)
 		uv_close(reinterpret_cast<uv_handle_t *>(_handle), &Loop::OnDeallocate);
@@ -36,6 +38,8 @@ void AsyncHandle::Kill()
 
 bool AsyncHandle::TryInvoke()
 {
+	DuoScope(AsyncHandle::TryInvoke);
+
 	if (_killed || _invoked || _handle == nullptr)
 		return false;
 
@@ -46,6 +50,8 @@ bool AsyncHandle::TryInvoke()
 
 void AsyncHandle::OnAsync(uv_async_t *handle)
 {
+	DuoScope(AsyncHandle::OnAsync);
+
 	AsyncHandle* self = static_cast<AsyncHandle *>(handle->data);
 
 	if (self->_callback)

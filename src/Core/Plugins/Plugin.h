@@ -30,7 +30,7 @@ public:	//	IPlugin
 	IPluginResources* GetResources();
 
 public:	//	IPluginResources
-	virtual const char* GetName();
+	virtual const char* GetName(int* length);
 	virtual bool TryGetResource(const char* name, std::string* results);
 	virtual bool TryGetCodeResource(const char* name, std::string* results);
 
@@ -39,6 +39,7 @@ public:	//	IPluginResources
 
 protected:
 
+	std::string _path;
 	std::string _name;
 
 	int _id;
