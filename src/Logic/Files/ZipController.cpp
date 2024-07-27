@@ -48,12 +48,10 @@ void ZipOpenTask::Finish()
 IScriptResult *ZipController::Open(IScriptCall *call)
 {
 	std::string path;
-	if (!call->ArgString(1, &path))
-		return call->Error("Expected argument 1 to be a string!");
+	ARG_STRING(call, 1, path);
 
 	bool read;
-	if (!call->ArgBool(2, &read))
-		return call->Error("Expected argument 2 to be a boolean! (read)");
+	ARG_BOOL(call, 2, read);
 
 	_loop->NewTask(new ZipOpenTask(this, call->GetFiber(), path, read ? 'r' : 'w'));
 	return call->Await();
@@ -65,8 +63,7 @@ IScriptResult *ZipController::Read(ZipEntity *entity, IScriptCall *call)
 		return call->Error("zip file has already been closed!");
 
 	std::string path;
-	if (!call->ArgString(1, &path))
-		return call->Error("Expected argument 1 to be a string!");
+	ARG_STRING(call, 1, path);
 
 	int status = zip_entry_open(entity->_file, path.c_str());
 	if (status != 0)
@@ -91,12 +88,10 @@ IScriptResult *ZipController::Write(ZipEntity *entity, IScriptCall *call)
 		return call->Error("zip file has already been closed!");
 
 	std::string path;
-	if (!call->ArgString(1, &path))
-		return call->Error("Expected argument 1 to be a string!");
+	ARG_STRING(call, 1, path);
 
 	std::string contents;
-	if (!call->ArgBuffer(2, &contents))
-		return call->Error("Expected argument 2 to be a buffer!");
+	ARG_BUFFER(call, 2, contents);
 
 	{
 		//	if the entry already exists, delete it
@@ -120,12 +115,10 @@ IScriptResult *ZipController::Append(ZipEntity *entity, IScriptCall *call)
 		return call->Error("zip file has already been closed!");
 
 	std::string path;
-	if (!call->ArgString(1, &path))
-		return call->Error("Expected argument 1 to be a string!");
+	ARG_STRING(call, 1, path);
 
 	std::string contents;
-	if (!call->ArgBuffer(2, &contents))
-		return call->Error("Expected argument 2 to be a buffer!");
+	ARG_BUFFER(call, 2, contents);
 
 	int status = zip_entry_open(entity->_file, path.c_str());
 	if (status != 0)

@@ -28,15 +28,14 @@ IScriptResult *LogController::Error(IScriptCall *call)
 
 IScriptResult *LogController::Log(IScriptCall *call, ILogger::Severity severity)
 {
-	char message[256];
-	if (!call->ArgString(1, message, sizeof(message)))
-		return call->Error("Expected string for argument 1");
+	std::string message;
+	ARG_STRING(call, 1, message);
 
 	char from[64] = "Script";
 	call->ArgString(2, from, sizeof(from));
 
 	//	TODO: Replace "Script" with isolate name
-	g_Log.Message(from, severity, "%s", message);
+	g_Log.Message(from, severity, "%s", message.c_str());
 
 	return call->Return();
 }

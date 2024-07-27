@@ -14,8 +14,7 @@ PointerController g_PointerController;
 IScriptResult *PointerController::Offset(void **entity, IScriptCall *call)
 {
 	int offset;
-	if (!call->ArgInt(1, &offset))
-		return call->Error("Expected argument 1 to be an offset!");
+	ARG_INT(call, 1, offset);
 
 	void* result = static_cast<char*>(*entity) + offset;
 	return this->ReturnNew(call, &result);
@@ -46,8 +45,7 @@ IScriptResult *PointerController::Read(void* *entity, IScriptCall *call)
 	//	TODO: Basic memory safety required here!
 	//	Create a buffer from the length specified
 	unsigned length;
-	if (!call->ArgUnsigned(1, &length))
-		return call->Error("Expected argument 1 to be a length!");
+	ARG_UINT(call, 1, length);
 
 	//	Luau will now make a !!FULL COPY!! of the data and pass it to the
 	//	scripting engine. The luau buffer library can now be used to read
@@ -58,20 +56,17 @@ IScriptResult *PointerController::Read(void* *entity, IScriptCall *call)
 
 IScriptResult *PointerController::Write(void* *entity, IScriptCall *call)
 {
-	void* result;
-	size_t size;
-	if (!call->ArgBuffer(1, &result, &size))
-		return call->Error("Expected argument 1 to be a buffer!");
+	std::string buffer;
+	ARG_BUFFER(call, 1, buffer);
 
-	memcpy(*entity, result, size);
+	memcpy(*entity, buffer.data(), buffer.size());
 	return call->Return();
 }
 
 IScriptResult *PointerController::OfModule(IScriptCall *call)
 {
 	std::string module_name;
-	if (!call->ArgString(1, &module_name))
-		return call->Error("Expected argument 1 to be a string!");
+	ARG_STRING(call, 1, module_name);
 
 #ifdef KE_WINDOWS
 	void* module = GetModuleHandleA(module_name.c_str());

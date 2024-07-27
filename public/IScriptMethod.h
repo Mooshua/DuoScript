@@ -20,6 +20,49 @@ class IIsolateHandle;
 
 #include "IScript.h"
 
+#define _ARG_ERROR(call, func, varname, slotnum, what)	 \
+	return (call)->Error(                         		 \
+		"[%s] Expected argument '%s' (#%d) to be a %s!", \
+		func, varname, (slotnum), what 					 \
+	)
+
+#define ARG_STRING(call, slot, var)              				  \
+    do {                                         				  \
+        if (!(call)->ArgString( (slot), &(var) ))  				  \
+    		_ARG_ERROR(call, __FUNCTION__, #var, slot, "string"); \
+    } while (0)
+
+#define ARG_BUFFER(call, slot, var)              					 \
+    do {                                         					 \
+        if (!(call)->ArgBuffer( (slot), &(var) ))  					 \
+    		_ARG_ERROR(call, __FUNCTION__, #var, slot, "buffer");	 \
+    } while (0)
+
+#define ARG_INT(call, slot, var)          	    				 \
+    do {                                         				 \
+        if (!(call)->ArgInt( (slot), &(var) ))  				 \
+    		_ARG_ERROR(call, __FUNCTION__, #var, slot, "int");	 \
+    } while (0)
+
+#define ARG_UINT(call, slot, var)          	    					 \
+    do {                                         					 \
+        if (!(call)->ArgUnsigned( (slot), &(var) ))  				 \
+    		_ARG_ERROR(call, __FUNCTION__, #var, slot, "unsigned");	 \
+    } while (0)
+
+#define ARG_NUMBER(call, slot, var)          	    				 \
+    do {                                         					 \
+        if (!(call)->ArgNumber( (slot), &(var) ))  					 \
+    		_ARG_ERROR(call, __FUNCTION__, #var, slot, "number");	 \
+    } while (0)
+
+#define ARG_BOOL(call, slot, var)  	        	   	 			 \
+    do {                                         				 \
+        if (!(call)->ArgBool( (slot), &(var) ))  				 \
+    		_ARG_ERROR(call, __FUNCTION__, #var, slot, "bool");	 \
+    } while (0)
+
+
 //	I'm not sure if this is the best solution,
 //	but it's the one I have now so yee-haw.
 ///	DO NOT DEPEND--I AM AN IMPLEMENTATION DETAIL.

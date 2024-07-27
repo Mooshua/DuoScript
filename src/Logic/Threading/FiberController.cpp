@@ -81,8 +81,8 @@ IScriptResult *FiberController::Sleep(IScriptCall *args)
 	DuoScope(FiberController::Sleep);
 
 	unsigned duration;
-	if (!args->ArgUnsigned(1, &duration))
-		return args->Error("Expected argument 1 to be an unsigned integer");
+	ARG_UINT(args, 1, duration);
+
 
 	//	Begin delaying
 	new ThreadResumer(_loop, args->GetFiber(), duration);

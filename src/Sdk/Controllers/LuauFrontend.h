@@ -5,6 +5,7 @@
 #ifndef DUOSCRIPT_LUAUFRONTEND_H
 #define DUOSCRIPT_LUAUFRONTEND_H
 
+#include <Generic/StringMap.h>
 #include <ILogger.h>
 #include <IScriptController.h>
 #include "Luau/FileResolver.h"
@@ -16,7 +17,8 @@ class LuauFrontend
 public:
 	void Build(Luau::FileResolver* fileResolver, Luau::ConfigResolver* configResolver)
 	{
-		this->frontend = new Luau::Frontend(fileResolver, configResolver, this->options);
+		this->frontend = std::make_shared<Luau::Frontend>
+		        (fileResolver, configResolver, this->options);
 	}
 
 	LuauFrontend& operator=(const LuauFrontend& other)
@@ -31,7 +33,7 @@ public:
 	}
 public:
 	Luau::FrontendOptions options;
-	Luau::Frontend* frontend;
+	std::shared_ptr<Luau::Frontend> frontend;
 };
 
 class LuauConfigResolver : public Luau::ConfigResolver
@@ -52,10 +54,17 @@ public:
 class LuauFileResolver : public Luau::FileResolver
 {
 	ILogger* _log;
+	std::shared_ptr<Luau::Frontend> _frontend;
+	ke::StringMap<void*>* _environments;
 
 public:
 	LuauFileResolver(ILogger* log, IIsolateHandle* isolate, IScriptMethod* readmethod, IScriptMethod* resolveMethod, IScriptMethod* envmethod);
 	~LuauFileResolver() override;
+
+	void PostBuild(std::shared_ptr<Luau::Frontend> frontend)
+	{
+		_frontend = frontend;
+	}
 
 public:	//	FileResolver
 	std::optional<Luau::SourceCode> readSource(const Luau::ModuleName& name) override;

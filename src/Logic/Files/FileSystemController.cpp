@@ -139,9 +139,8 @@ IScriptResult *FileController::Open(IScriptCall *call)
 {
 	DuoScope(File::Open);
 
-	char path[256];
-	if (!call->ArgString(1, path, sizeof(path)))
-		call->Error("Expected argument 1 to be a string!");
+	std::string path;
+	ARG_STRING(call, 1, path);
 
 	//	Optional arg: Should we make a file if we dont have one?
 	bool create = true;
@@ -150,7 +149,7 @@ IScriptResult *FileController::Open(IScriptCall *call)
 	FileOpenRequest* request = new FileOpenRequest(this->_logger, call->GetFiber(), this);
 	{
 		DuoScope(uv_fs_open);
-		uv_fs_open(_loop->AsLoop(), &request->request, path, UV_FS_O_RDWR | (create ? UV_FS_O_CREAT : 0), 0,
+		uv_fs_open(_loop->AsLoop(), &request->request, path.c_str(), UV_FS_O_RDWR | (create ? UV_FS_O_CREAT : 0), 0,
 				   &FileOpenRequest::Callback);
 	}
 	return call->Await();
@@ -166,8 +165,7 @@ IScriptResult *FileController::Read(FileEntity *file, IScriptCall *call)
 	unsigned length;
 	int offset = -1;
 
-	if (!call->ArgUnsigned(1, &length))
-		return call->Error("Expected argument 1 to be an integer!");
+	ARG_UINT(call, 1, length);
 
 	//	Optional param
 	call->ArgInt(2, &offset);
@@ -197,11 +195,9 @@ IScriptResult *FileController::Write(FileEntity* file, IScriptCall *call)
 	DuoScope(File::Write);
 
 	int offset = -1;
-	char* buffer;
-	size_t length;
+	std::string buffer;
 
-	if (!call->ArgBuffer(1, reinterpret_cast<void **>(&buffer), &length))
-		return call->Error("Expected argument 1 to be a buffer! (use buffer.fromstring)");
+	ARG_BUFFER(call, 1, buffer);
 
 	if (!file->IsValid())
 		return call->Error("File object is not valid!");
@@ -210,10 +206,10 @@ IScriptResult *FileController::Write(FileEntity* file, IScriptCall *call)
 	call->ArgInt(2, &offset);
 
 	FileRequest* request = new FileRequest(this->_logger, call->GetFiber(), false);
-	request->buffer.base = static_cast<char *>(mi_zalloc(length));
-	request->buffer.len = length;
+	request->buffer.base = static_cast<char *>(mi_zalloc(buffer.size()));
+	request->buffer.len = buffer.length();
 
-	memcpy(request->buffer.base, buffer, length);
+	memcpy(request->buffer.base, buffer.data(), buffer.length());
 
 	{
 		DuoScope(uv_fs_write);

@@ -27,6 +27,9 @@ LuauFileResolver::LuauFileResolver(
 	this->readmethod = readmethod;
 	this->resolvemethod = resolvemethod;
 	this->envmethod = envmethod;
+
+	this->_environments = new ke::StringMap<void*>();
+	this->_environments->init();
 }
 
 LuauFileResolver::~LuauFileResolver()
@@ -131,6 +134,14 @@ std::optional<std::string> LuauFileResolver::getEnvironmentForModule(const Luau:
 		return std::nullopt;
 	}
 
+	//	Ensure the environment exists, first off...
+	if (!_environments->find(environment.c_str()).found()) {
+		_frontend->addEnvironment(environment);
+
+		auto insert = _environments->findForAdd(environment.c_str());
+		_environments->add(insert, nullptr);
+	}
+
 	delete fiber;
 	return environment;
 }
@@ -175,8 +186,10 @@ IScriptResult *LuauFrontendController::New(IScriptCall *call)
 		return call->Error("Missing EnvironmentResolver in argument 3!");
 
 	LuauFileResolver* fileResolver = new LuauFileResolver(_log, call->GetIsolate(), fileResolve, moduleResolve, envResolve);
-
 	entity.Build(fileResolver, configResolver);
+
+	//	I hate this so much
+	fileResolver->PostBuild(entity.frontend);
 
 	Luau::registerBuiltinGlobals(*entity.frontend, entity.frontend->globals);
 
