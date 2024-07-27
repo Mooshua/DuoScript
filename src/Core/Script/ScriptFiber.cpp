@@ -15,6 +15,7 @@ ScriptFiber::ScriptFiber(ScriptIsolate *parent, lua_State *L, IScriptRef* thread
 	: call(ScriptCall(this))
 {
 	//	lua_checkstack(parent->L, 1);
+	this->_logger = parent->_logger;
 
 	this->first_invoke = true;
 	this->parent = parent;
@@ -54,7 +55,7 @@ IFiberHandle *ScriptFiber::ToHandle()
 {
 	DuoScope(ScriptFiber::ToHandle);
 
-	return new FiberHandle(parent->ToHandleInternal(), fiber_id);
+	return new FiberHandle(parent->_parent, parent->ToHandleInternal(), fiber_id);
 }
 
 bool ScriptFiber::TrySetup(IScriptMethod *method, IScriptInvoke** args)
@@ -107,19 +108,8 @@ IScriptReturn *ScriptFiber::Call(bool use)
 	if (status != LUA_YIELD) {
 		DuoScope(ScriptFiber::Call - Continue Dependants);
 
-		for (IFiberHandle *dependant: _dependants) {
-			if (!dependant->Exists())
-				continue;
-
-			IScriptFiber *fiber = dependant->Get();
-			IScriptInvoke *invoke;
-			if (fiber->TryContinue(&invoke)) {
-				//	First return: Was the fiber successful?
-				invoke->PushBool(!call.IsError());
-				invoke->PushVarArgs(call.ToPolyglot(), 1);
-
-				fiber->Call(false);
-			}
+		for (IFiberContinuation *dependant: _dependants) {
+			dependant->Continue(&call);
 		}
 	}
 
@@ -132,6 +122,8 @@ IScriptReturn *ScriptFiber::Call(bool use)
 
 	return &call;
 }
+
+
 
 void ScriptFiber::Kill(const char *fmt, ...)
 {
@@ -149,7 +141,7 @@ void ScriptFiber::OnError(const char *error)
 {
 	DuoScope(ScriptFiber::OnError);
 
-	g_Log.Message(this->parent->GetResources()->GetName(), ILogger::SEV_ERROR,
+	_logger->Message(this->parent->GetResources()->GetName(), ILogger::SEV_ERROR,
 				  "Script error: %s", error);
 	lua_Debug debug;
 
@@ -157,7 +149,7 @@ void ScriptFiber::OnError(const char *error)
 
 		lua_getinfo(L, i, "nsl", &debug);
 
-		g_Log.Blank("    [%s:%i] %s @ %s",
+		_logger->Blank("    [%s:%i] %s @ %s",
 					  debug.short_src, debug.linedefined, debug.what, debug.name);
 	}
 
@@ -167,8 +159,10 @@ void ScriptFiber::OnError(const char *error)
 	lua_resetthread(this->L);
 }
 
-bool ScriptFiber::TryDepend(IFiberHandle *other)
+bool ScriptFiber::TryDepend(IFiberContinuation *other)
 {
 	_dependants.push_back(other);
 	return true;
 }
+
+

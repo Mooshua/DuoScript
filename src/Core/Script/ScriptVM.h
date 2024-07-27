@@ -10,12 +10,15 @@
 #include <lua.h>
 #include <lualib.h>
 
+class ScriptControllerManager;
+
 #include <IScript.h>
 #include <vector>
 #include "IScriptMethod.h"
 #include "ScriptControllers.h"
 #include "ScriptFiber.h"
 #include "ScriptHandles.h"
+#include "ILogger.h"
 
 class ScriptIsolate;
 class IsolateHandle;
@@ -28,7 +31,7 @@ class ScriptVM : IScript
 {
 	friend class ScriptIsolate;
 public:
-	ScriptVM();
+	ScriptVM(ILogger* logger);
 
 	void Initialize() override;
 
@@ -62,6 +65,9 @@ protected:
 	static int16_t UserAtom(const char* s, size_t l);
 
 protected:
+	ILogger* _logger;
+
+protected:
 	std::vector<lua_State *> boxes;
 	std::vector<ScriptIsolate*> _isolates;
 
@@ -76,8 +82,6 @@ public:
 	lua_State *L;
 
 };
-
-extern ScriptVM g_ScriptVM;
 
 class ScriptIsolate : public IScriptIsolate
 {
@@ -104,6 +108,9 @@ public:
 
 public:
 	lua_State *L;
+protected:
+	ILogger* _logger;
+
 protected:
 	IIsolateResources* _resources;
 	ScriptVM* _parent;

@@ -46,6 +46,4 @@ private:
 	uv_mutex_t loop_lock;
 };
 
-extern Loop g_Loop;
-
 #endif //DUOSCRIPT_LOOP_H

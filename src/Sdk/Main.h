@@ -10,13 +10,16 @@
 #include "Core/Script/ScriptVM.h"
 #include "Core/Loop/Loop.h"
 #include "Core/Plugins/PluginManager.h"
+#include "Core.h"
 
 class Main
 {
 public:
 	void Initialize();
-	void Run();
 
+	[[noreturn]] void Run();
+
+	DuoCore core;
 protected:
 	PluginLoadResult* _plugin;
 };

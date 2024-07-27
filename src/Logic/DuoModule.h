@@ -5,9 +5,10 @@
 #ifndef DUOSCRIPT_DUOMODULE_H
 #define DUOSCRIPT_DUOMODULE_H
 
+#include "Logic.h"
 #include <IModule.h>
 
-MODULE_NEW(Logic)
+MODULE_NEW(DuoLogicModule)
 {
 	MODULE_BUILTINS;
 
@@ -17,9 +18,8 @@ MODULE_NEW(Logic)
 
 	MODULE_VERSION("1.0.0");
 	MODULE_LICENSE("MIT");
-
-protected:
-	void OnScriptReady(IScriptControllerManager* manager);
+public:
+	DuoLogic* Logic;
 };
 
 

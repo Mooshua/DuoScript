@@ -3,9 +3,6 @@
 // accessible by any user able to connect to a server running this program.
 
 #include "FiberController.h"
-#include "LogicGlobals.h"
-
-FiberController g_FiberController;
 
 IScriptResult *FiberController::New(IScriptCall *args)
 {
@@ -51,7 +48,7 @@ IScriptResult *FiberController::Await(IScriptCall *args)
 			args->GetLength() - 1);
 
 	//	Log this
-	g_DuoLog->Tip("Fibers", "Await() invoked: make sure you don't deadlock!");
+	_log->Tip("Fibers", "Await() invoked: make sure you don't deadlock!");
 
 	return args->Await();
 }
@@ -88,7 +85,7 @@ IScriptResult *FiberController::Sleep(IScriptCall *args)
 		return args->Error("Expected argument 1 to be an unsigned integer");
 
 	//	Begin delaying
-	new ThreadResumer(args->GetFiber(), duration);
+	new ThreadResumer(_loop, args->GetFiber(), duration);
 	return args->Await();
 }
 

@@ -5,10 +5,14 @@
 #ifndef DUOSCRIPT_SCRIPTCONTROLLERS_H
 #define DUOSCRIPT_SCRIPTCONTROLLERS_H
 
+#include <ILogger.h>
+
+class ScriptVM;
 
 #include "IScriptController.h"
 #include "lua.h"
 #include "lualib.h"
+#include "ScriptVM.h"
 
 class ControllerInstance : public virtual IControllerInstance
 {
@@ -39,8 +43,10 @@ class ScriptControllerManager : public virtual IScriptControllerManager
 {
 	friend class ControllerInstance;
 public:
-	ScriptControllerManager(lua_State *L)
+	ScriptControllerManager(lua_State *L, ScriptVM* vm, ILogger* log)
 		: L(L)
+		, _vm(vm)
+		, _log(log)
 	{
 
 	}
@@ -55,6 +61,9 @@ protected:
 
 protected:
 	///	lua_ref to this->InvokeUserdataNamecall
+	ScriptVM* _vm;
+	ILogger* _log;
+
 	lua_State *L;
 	int ref_namecall_func;
 };

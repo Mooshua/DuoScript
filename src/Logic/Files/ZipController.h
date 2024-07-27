@@ -55,9 +55,11 @@ protected:
 
 class ZipController : public IScriptController<ZipEntity>
 {
+	ILoop* _loop;
 	friend class ZipOpenTask;
 public:
-	ZipController()
+	ZipController(ILoop* loop)
+	: _loop(loop)
 	{
 		CONTROLLER_NAME(Zip);
 

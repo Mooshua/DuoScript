@@ -14,11 +14,18 @@
 #include <ILogger.h>
 #include <IScript.h>
 #include <IScriptController.h>
+#include <IFiles.h>
 
 class IDuoServices
 {
 public:
+	///	@brief A script controller manager for your module's controllers.
+	///	This will automagically unload resources when your plugin is unloaded.
 	virtual IScriptControllerManager* ScriptController() = 0;
+
+	///	@brief A loop instance for your module
+	///	!! Currently this is entirely unsafe !! but in the future
+	///	this will be replaced with a change-tracking implementation.
 	virtual ILoop* Loop() = 0;
 };
 
@@ -44,6 +51,7 @@ public:
 	///	and this is called, this has undefined behavior.
 	///	(please only use this as a DuoScript module!)
 	///
+	///	[BELOW IS AN IMPLEMENTATION **GOAL**. ACTUALLY STILL INDEV!!]
 	///	This will call myself->DuoLoad() sometime in the future
 	///	with a pointer to your plugin services sink.
 	///	as long as you are loaded through duo, it is perfectly
@@ -63,19 +71,24 @@ public:
 	///	@brief Get a copy of the DuoScript logger
 	///	You can use this to log load failures.
 	virtual ILogger* GetLogger() = 0;
+
+	///	@brief Get a copy of the DuoScript filesystem layer
+	///	This is a simple C++ API for accessing the local filesystem!
+	virtual IFiles* GetFiles() = 0;
 };
 
 
 #define MODULE_NEW(classname) \
 	class classname; \
 	PLUGIN_GLOBALVARS()         \
-    extern IDuoServices* g_Duo; \
-    extern ILoop* g_DuoLoop;                          \
-    extern ILogger* g_DuoLog;                          \
     extern classname g_##classname; \
 	class classname : public virtual IModule
 
 #define MODULE_BUILTINS \
+    IDuoServices* _duo;        \
+	ILogger* _logger;   \
+	ILoop* _loop;          \
+    IFiles* _files;                    \
 	virtual void DuoLoad(IDuoServices* services); \
 	virtual bool Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlength, bool late); \
     virtual bool Unload(char *error, size_t maxlength);                    \
@@ -103,7 +116,8 @@ public:
         	if (g_Intro_ == nullptr) \
 				return;              \
                                     \
-            g_DuoLog = g_Intro_->GetLogger();                        \
+            this->_logger = g_Intro_->GetLogger();                        \
+            this->_files = g_Intro_->GetFiles();                      \
 			g_Intro_->Hello(this, &g_PLID);\
 		}		\
 	}                                  \
@@ -131,8 +145,8 @@ public:
                                \
 	void classname :: DuoLoad(IDuoServices* services) \
 	{                             \
-		g_Duo = services;            \
-		g_DuoLoop = services->Loop();\
+        this->_loop = services->Loop();                       \
+		this->_duo = services;            \
 	}      \
                                \
 	MODULE_IMPL_LOAD(classname)   \

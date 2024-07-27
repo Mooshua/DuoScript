@@ -8,47 +8,38 @@
 
 #include <iostream>
 
-#include "Threading/FiberController.h"
 #include "Files/FileSystemController.h"
-#include "Generic/LogController.h"
 #include "Sdk/Controllers/LuauFrontend.h"
 #include "Sdk/Controllers/LuauCheckResult.h"
-#include "Files/ZipController.h"
 #include "Memory/PointerController.h"
+#include "Core.h"
+
+#include "Logic.h"
 
 duo::Plot g_PendingEvents("Pending Events", tracy::PlotFormatType::Number);
-Main g_Main;
-ILogger* g_DuoLog;
-ILoop* g_DuoLoop;
+
 
 int main(int argc, char **argv)
 {
 	uv_setup_args(argc, argv);
 	getchar();
 
-	//	This is to provide binary build compatibility
-	//	with duo_logic
-	g_DuoLog = &g_Log;
-	g_DuoLoop = &g_Loop;
+	Main main;
+	main.core.Loop->Initialize();
+	main.core.ScriptVM->Initialize();
 
-	g_Loop.Initialize();
-	g_ScriptVM.Initialize();
+	DuoLogic logic(main.core.Log, main.core.Loop, main.core.Files );
 
-	IScriptControllerManager* controllers = g_ScriptVM.controllers;
+	IScriptControllerManager* controllers = main.core.ScriptVM->controllers;
 	{
-		controllers->Register(&g_FiberController);
-		controllers->Register(&g_FileController);
-		controllers->Register(&g_LogController);
-		controllers->Register(&g_ZipController);
-		controllers->Register(&g_PointerController);
+		logic.OnScriptReady(controllers);
 
-		controllers->Register(&g_LuauFrontend);
+		controllers->Register(new LuauFrontendController(main.core.Log));
 		controllers->Register(&g_LuauCheckResult);
-
 	}
 
-	g_Main.Initialize();
-	g_Main.Run();
+	main.Initialize();
+	main.Run();
 }
 
 void Main::Initialize()
@@ -57,7 +48,7 @@ void Main::Initialize()
 	char path[256];
 	duo::BuildPath(path, sizeof(path), "%s/%s", duo::ExecutablePath().c_str(), "duokit.duo");
 
-	this->_plugin = g_PluginManager.LoadPluginInternal("duokit.duo", path);
+	this->_plugin = core.PluginManager->LoadPluginInternal("duokit.duo", path);
 
 	if (!this->_plugin->success)
 	{
@@ -69,15 +60,15 @@ void Main::Initialize()
 	this->_plugin->plugin->Start();
 }
 
-void Main::Run()
+[[noreturn]] void Main::Run()
 {
 	while (true) {
 		duo::Frame _("Loop");
 
-		uv_run(g_Loop.AsLoop(), UV_RUN_ONCE);
+		uv_run(core.Loop->AsLoop(), UV_RUN_ONCE);
 
 		uv_metrics_t metrics;
-		uv_metrics_info(g_Loop.AsLoop(), &metrics);
+		uv_metrics_info(core.Loop->AsLoop(), &metrics);
 
 		g_PendingEvents.Set(metrics.events_waiting);
 	}

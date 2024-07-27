@@ -19,14 +19,15 @@ duo::Plot g_Atoms("Atom Count", tracy::PlotFormatType::Number);
 ke::StringMap<int16_t> ScriptVM::_atoms;
 int16_t ScriptVM::_nextAtom = ATOM_UNDEF + 1;
 
-ScriptVM g_ScriptVM;
+ScriptVM g_ScriptVM(&g_Log);
 
-ScriptVM::ScriptVM()
+ScriptVM::ScriptVM(ILogger* logger)
 {
 	//	We CANNOT create a Lua_State here because
 	//	the constructor is running in the global initialization
 	//	context, and Luau isn't set up yet!
 
+	_logger = logger;
 	_atoms.init(65536);
 }
 
@@ -48,6 +49,7 @@ lua_State* ScriptVM::CreateBox(IScriptRef** box_ref)
 
 ScriptIsolate::ScriptIsolate(ScriptVM *parent, IIsolateResources* resources)
 {
+	_logger = parent->_logger;
 	_parent = parent;
 	_resources = resources;
 
@@ -140,7 +142,7 @@ IsolateHandle *ScriptIsolate::ToHandleInternal()
 {
 	DuoScope(ScriptIsolate::ToHandle);
 
-	return new IsolateHandle(isolate_id);
+	return new IsolateHandle(this->_parent, isolate_id);
 }
 
 IIsolateHandle *ScriptIsolate::ToHandle()
@@ -232,7 +234,7 @@ void ScriptVM::NewGlobal(const char *name, IScriptRef *ref)
 void ScriptVM::Initialize()
 {
 	this->L = lua_newstate(&ScriptVM::Alloc, nullptr);
-	this->controllers = new ScriptControllerManager(this->L);
+	this->controllers = new ScriptControllerManager(this->L, this, _logger);
 
 	auto callbacks = lua_callbacks(L);
 	callbacks->useratom = &ScriptVM::UserAtom;
@@ -273,13 +275,13 @@ void ScriptVM::Initialize()
 	lua_pushvalue(L, LUA_GLOBALSINDEX);
 	luaL_register(L, nullptr, stdlibs);
 
-	g_Log.Component("Luau", Log::STAT_GOOD, "Started");
+	_logger->Component("Luau", Log::STAT_GOOD, "Started");
 
 	if (Luau::CodeGen::isSupported()) {
 		Luau::CodeGen::create(L);
-		g_Log.Component("Luau JIT", Log::STAT_GOOD, "Started");
+		_logger->Component("Luau JIT", Log::STAT_GOOD, "Started");
 	} else {
-		g_Log.Component("Luau JIT", Log::STAT_NOTE, "JIT not supported on platform; fallback to interpreter");
+		_logger->Component("Luau JIT", Log::STAT_NOTE, "JIT not supported on platform; fallback to interpreter");
 	}
 }
 

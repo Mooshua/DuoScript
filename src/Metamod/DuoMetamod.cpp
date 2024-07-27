@@ -65,13 +65,7 @@ bool DuoMetamod::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 			static_cast<ISmmPluginManager *>(ismm->MetaFactory(MMIFACE_PLMANAGER, &ret, &id));
 	}
 
-	g_Log.Message("Duo Core", Log::SEV_INFO, "Hello");
-
 	//	Initialize core subsystems
-	g_Loop.Initialize();
-	g_ScriptVM.Initialize();
-
-	g_Log.Component("Duo Core", Log::STAT_GOOD, "Started");
 
 	return true;
 }
@@ -80,9 +74,6 @@ bool DuoMetamod::Unload(char *error, size_t maxlen)
 {
 	g_Log.Component("Duo Core", Log::STAT_NOTE, "Stopping");
 	delete g_Duo;
-
-	if (!g_Loop.Destroy())
-		return UTIL_Error(error, maxlen, "Unexpected loop shutdown error");
 
 	g_Log.Message("Duo Core", Log::SEV_INFO, "Goodbye <3");
 
@@ -112,7 +103,7 @@ void *DuoMetamod::OnMetamodQuery(const char *iface, int *ret)
 	if (strcmp(iface, INTERFACE_MODULEINTRODUCER_001) == 0)
 	{
 		*ret = IFACE_OK;
-		return static_cast<IModuleIntroducer*>(&g_ModuleManager);
+		return static_cast<IModuleIntroducer*>(g_Duo->_modules);
 	}
 
 	*ret = IFACE_FAILED;

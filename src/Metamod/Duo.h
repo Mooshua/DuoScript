@@ -13,12 +13,20 @@
 #include "Loop/Loop.h"
 #include "Script/ScriptVM.h"
 #include "Logging/Log.h"
+#include "Core.h"
+#include "Metamod/Modules/ModuleManager.h"
 
 //	Stupid dumb stuff
 class GameSessionConfiguration_t { };
 
 class Duo
 {
+public:
+	ModuleManager* _modules;
+
+	DuoCore* _core;
+	ILogger* _log;
+
 public:
 	Duo(bool late);
 	~Duo();

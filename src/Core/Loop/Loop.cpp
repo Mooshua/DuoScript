@@ -8,8 +8,6 @@
 #include "Logging/Log.h"
 #include "WorkHandle.h"
 
-Loop g_Loop;
-
 
 void Loop::Initialize()
 {

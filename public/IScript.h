@@ -67,6 +67,12 @@ public:
 	virtual bool TryGetObject(int index      , IScriptObject **result) = 0;
 };
 
+///	@brief An entity which can be resumed when a fiber runs to completion
+class IFiberContinuation
+{
+public:
+	virtual void Continue(IScriptReturn* results) = 0;
+};
 
 class IScriptFiber
 {
@@ -102,18 +108,25 @@ public:
 	/// @brief Request another fiber be resumed when this one completes
 	///	The other fiber should already be yielded. The fiber will be invoked
 	///	with all args returned from this fiber.
-	virtual bool TryDepend(IFiberHandle *other) = 0;
+	virtual bool TryDepend(IFiberContinuation *other) = 0;
 };
 
 ///	Resources for an isolate, such as require() resolving
 class IIsolateResources
 {
 public:
+	enum ResourceType
+	{
+		Nonexistant,
+		Directory,
+		File,
+	};
+
 	///	@brief Get the name of the isolate
 	virtual const char* GetName(int* length = nullptr) = 0;
 
 	///	@brief Get the resource at the specified path
-	virtual bool TryGetResource(const char* name, std::string* results) = 0;
+	virtual ResourceType TryGetResource(const char* name, std::string* results) = 0;
 
 	///	@brief Compile the source file at the specified path
 	virtual bool TryGetCodeResource(const char *name, std::string *results) = 0;
@@ -123,7 +136,6 @@ public:
 class IScriptIsolate
 {
 public:
-
 	///	Create a handle pointing to this isolate
 	virtual IIsolateHandle* ToHandle() = 0;
 
@@ -162,7 +174,7 @@ public:
 	virtual IScriptIsolate* Get() = 0;
 };
 
-class IFiberHandle
+class IFiberHandle : public IFiberContinuation
 {
 public:
 	virtual ~IFiberHandle() = default;

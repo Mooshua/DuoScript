@@ -94,7 +94,6 @@ set (duo_core_sources
 
         src/Core/Logging/Log.cpp
 
-        src/Core/Modules/ControllerManagerSink.cpp
 
         src/Core/Loop/Loop.cpp
         src/Core/Loop/AsyncHandle.cpp
@@ -104,10 +103,14 @@ set (duo_core_sources
         src/Core/Plugins/PluginManager.cpp
         src/Core/Plugins/Plugin.cpp
         src/Core/Files/Files.cpp
-        src/Core/Modules/ModuleManager.cpp
-        src/Core/Modules/ModuleInstance.cpp
 
         src/Core/Alloc.cpp
+        src/Core/Plugins/Objects/PluginFileController.cpp
+        src/Core/Plugins/Objects/PluginFileController.h
+        src/Core/Plugins/Objects/PluginSingletonController.cpp
+        src/Core/Plugins/Objects/PluginSingletonController.h
+        src/Core/Core.cpp
+        src/Core/Core.h
 )
 
 add_library(duo_core STATIC
@@ -165,6 +168,12 @@ include_directories(
 add_library(duo SHARED
         src/Metamod/Duo.cpp
         src/Metamod/DuoMetamod.cpp
+
+        src/Metamod/Modules/ModuleManager.cpp
+        src/Metamod/Modules/ModuleInstance.cpp
+
+        src/Metamod/Modules/ControllerManagerSink.cpp
+
 )
 
 target_include_directories(duo PRIVATE src/Core)
@@ -178,6 +187,8 @@ target_link_libraries(duo duo_core)
 #   ==============================================
 
 set(duo_logic_sources
+        src/Logic/Logic.cpp
+
         src/Logic/Threading/FiberController.cpp
 
         src/Logic/Files/ZipController.cpp
@@ -186,11 +197,7 @@ set(duo_logic_sources
         src/Logic/Generic/PerformanceController.cpp
         src/Logic/Generic/LogController.cpp
         src/Logic/Net/HttpRequestController.cpp
-        src/Logic/Net/HttpRequestController.h
         src/Logic/Memory/PointerController.cpp
-        src/Logic/Memory/PointerController.h
-
-
 )
 
 add_library(duo_logic SHARED

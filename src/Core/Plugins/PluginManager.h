@@ -12,7 +12,10 @@ class Plugin;
 
 #include "Loop/Loop.h"
 #include "Plugin.h"
+#include "Files/Files.h"
 #include <IPlugin.h>
+#include <ILogger.h>
+#include "Script/ScriptVM.h"
 
 class PluginLoadResult
 {
@@ -31,9 +34,19 @@ public:
 
 class PluginManager : public virtual IPluginManager
 {
-	friend class Plugin;
+	ScriptVM* _vm;
+	ILogger* _log;
+	Files* _files;
 
+	friend class Plugin;
 public:
+	PluginManager(ILogger* log, Files* files, ScriptVM* vm)
+	: _log(log)
+	, _files(files)
+	, _vm(vm)
+	{
+	}
+
 	PluginLoadResult* LoadPluginInternal(const char* name, const char* path);
 
 public:	// IPluginManager
@@ -48,7 +61,5 @@ public:	// IPluginManager
 protected:
 	std::vector<PluginLoadResult*> _plugins;
 };
-
-extern PluginManager g_PluginManager;
 
 #endif //DUOSCRIPT_PLUGINMANAGER_H

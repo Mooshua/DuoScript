@@ -11,7 +11,7 @@
 --  In other words, we're making it as easy as possible for the
 --  C++ plugin manager to interact with this plugin.
 
-local s, FileTree = require "Tree.FileTree"
+local _, FileTree = require "Tree.FileTree"
 
 function FileResolver(path: string)
     Log:Debug(path, "FileResolver")
@@ -39,6 +39,12 @@ end
 
 function EnvironmentResolver(name: string)
     Log:Debug(name, "EnvironmentResolver")
+    local success, _, environment = FileTree:Query(name);
+
+    if not success then
+        Log:Error("Failed to fetch environment for ")
+        return nil
+    end
 
     return name;
 end
@@ -52,8 +58,8 @@ for i = 1, results.ErrorCount do
     Log:Error(code .. ": " .. error, module .. " " .. location)
 end]]
 
-local s, f = FileTree:Query("index");
-print(s,f);
+local s, f, e = FileTree:Query("index");
+print(s,f, e[#e]);
 
 while true do
     Fiber:Sleep(math.random(1,20))

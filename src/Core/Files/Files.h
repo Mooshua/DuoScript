@@ -8,11 +8,11 @@
 #include <uv.h>
 #include <IFiles.h>
 
-class Files
+class Files : public IFiles
 {
 public:
-	//virtual bool IsFile(const char* fmt, ...);
-	//virtual bool IsFolder(const char* fmt, ...);
+	virtual bool IsFile(const char* fmt, ...);
+	virtual bool IsFolder(const char* fmt, ...);
 
 	virtual void GetFiles(std::vector<std::string> *files, const char* fmt, ...);
 	virtual void GetDirectories(std::vector<std::string> *directories, const char* fmt, ...);
@@ -24,7 +24,7 @@ public:
 protected:
 	bool TryGetChildren(std::vector<std::string> *children, const char* path, uv_dirent_type_t type);
 	bool TryOpenDirectory(const char* path, uv_dir_t** directory);
-	bool TryGetStat(const char* path, uv_statfs_t* stat);
+	bool TryGetStat(const char* path, uv_stat_t* stat);
 };
 
 extern Files g_Files;

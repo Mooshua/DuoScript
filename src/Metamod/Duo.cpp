@@ -18,16 +18,28 @@ auto OnServerGameFrame = SourceHook::Hook<ISource2Server, &ISource2Server::GameF
 
 Duo::Duo(bool late)
 {
+	//	Create the core duo object
+	_core = new DuoCore();
+	_log = _core->Log;
+
+	//	This system actually loads in other duo bits for us
+	_modules = new ModuleManager(_core);
+
+	_log->Blank(" ┌──────────────────────────┐ ");
+	_log->Blank(" │ DuoScript                │ ");
+	_log->Blank(" └──────────────────────────┘ ");
+	_log->Blank("Hello, World!");
+
 	OnNetworkStartupServer->Add(g_NetworkServer, true, SH_MEMBER(this, &Duo::OnStartupServer));
 	OnServerGameFrame->Add(g_Server, false, SH_MEMBER(this, &Duo::OnGameFrame));
 
-	g_Log.Component("Duo Hooks", Log::STAT_GOOD, "Started");
+	_log->Component("Duo Hooks", Log::STAT_GOOD, "Started");
 
 	_started = false;
 
 	if (late)
 	{
-		g_Log.Component("Duo Hooks", Log::STAT_NOTE, "Late load detected");
+		_log->Component("Duo Hooks", Log::STAT_NOTE, "Late load detected - Starting duo now!");
 		this->Start();
 	}
 }
@@ -47,15 +59,22 @@ void Duo::Start()
 	if (_started)
 		return;
 
+	_core->Loop->Initialize();
+	_core->ScriptVM->Initialize();
+
+	//	Create the core object
 	_started = true;
 
-	g_ModuleManager.LoadAllModules();
-	g_PluginManager.LoadAllPlugins();
+	//	Load all other installed DuoMods
+	_modules->LoadAllModules();
+
+	//	Load and start all installed plugins
+	_core->PluginManager->LoadAllPlugins();
 }
 
 void Duo::Stop()
 {
-	g_ModuleManager.UnloadAllModules();
+	_modules.UnloadAllModules();
 }
 
 
@@ -77,7 +96,7 @@ void Duo::OnGameFrame(bool simulating, bool first, bool last)
 	duo::Frame _("DuoScript");
 
 	//	Push events through the loop
-	g_Loop.RunOnce();
+	_core->Loop->RunOnce();
 
 	RETURN_META(MRES_IGNORED);
 }

@@ -7,21 +7,22 @@
 #include "Luau/LinterConfig.h"
 #include "Luau/Transpiler.h"
 #include "Luau/Frontend.h"
-#include "LogicGlobals.h"
 #include "ILogger.h"
 #include "LuauCheckResult.h"
 #include "Luau/BuiltinDefinitions.h"
 
 #include <numeric>
 
-LuauFrontendController g_LuauFrontend;
 
-LuauFileResolver::LuauFileResolver(IIsolateHandle *isolate,
+LuauFileResolver::LuauFileResolver(
+		ILogger* logger,
+		IIsolateHandle *isolate,
 								   IScriptMethod* readmethod,
 								   IScriptMethod* resolvemethod,
 								   IScriptMethod* envmethod
 								   )
 {
+	this->_log = logger;
 	this->isolate = isolate;
 	this->readmethod = readmethod;
 	this->resolvemethod = resolvemethod;
@@ -57,7 +58,7 @@ std::optional<Luau::SourceCode> LuauFileResolver::readSource(const Luau::ModuleN
 	sourceCode.type = Luau::SourceCode::Module;
 
 	if (!results->ArgString(1, &sourceCode.source)) {
-		g_DuoLog->Message("FileResolver", ILogger::SEV_WARN,
+		_log->Message("FileResolver", ILogger::SEV_WARN,
 						  "nil received when reading file %s", name.c_str());
 		return std::nullopt;
 	}
@@ -102,7 +103,7 @@ std::optional<Luau::ModuleInfo> LuauFileResolver::resolveModule(const Luau::Modu
 	Luau::ModuleInfo module;
 
 	if (!results->ArgString(1, &module.name)) {
-		g_DuoLog->Message("FileResolver", ILogger::SEV_WARN,
+		_log->Message("FileResolver", ILogger::SEV_WARN,
 						  "nil received when looking up %s", Luau::toString(expr).c_str());
 		return std::nullopt;
 	}
@@ -125,7 +126,7 @@ std::optional<std::string> LuauFileResolver::getEnvironmentForModule(const Luau:
 	std::string environment;
 
 	if (!results->ArgString(1, &environment)) {
-		g_DuoLog->Message("FileResolver", ILogger::SEV_WARN,
+		_log->Message("FileResolver", ILogger::SEV_WARN,
 						  "nil received when getting environment of module %s", name.c_str());
 		return std::nullopt;
 	}
@@ -173,7 +174,7 @@ IScriptResult *LuauFrontendController::New(IScriptCall *call)
 	if (!call->ArgMethod(2, &envResolve))
 		return call->Error("Missing EnvironmentResolver in argument 3!");
 
-	LuauFileResolver* fileResolver = new LuauFileResolver(call->GetIsolate(), fileResolve, moduleResolve, envResolve);
+	LuauFileResolver* fileResolver = new LuauFileResolver(_log, call->GetIsolate(), fileResolve, moduleResolve, envResolve);
 
 	entity.Build(fileResolver, configResolver);
 

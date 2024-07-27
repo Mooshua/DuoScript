@@ -8,11 +8,17 @@
 #include "IModule.h"
 #include "Generic/IntMap.h"
 #include "ModuleInstance.h"
+#include "Files/Files.h"
+#include "Core.h"
 
 class ModuleManager : public virtual IModuleIntroducer
 {
+	DuoCore* _core;
+	Files* _files;
+	ILogger* _log;
+
 public:
-	ModuleManager();
+	ModuleManager(DuoCore* core);
 public:
 	bool LoadModule(const char* name);
 
@@ -25,6 +31,7 @@ public:
 
 public:	//	IModuleIntroducer
 	virtual ILogger* GetLogger();
+	virtual IFiles* GetFiles();
 	virtual void Hello(IModule* myself, PluginId* id);
 	virtual void Goodbye(IModule* myself, PluginId* id);
 
@@ -32,8 +39,6 @@ public:	//	IModuleIntroducer
 protected:
 	ke::IntMap<ModuleInstance*> _modules;
 };
-
-extern ModuleManager g_ModuleManager;
 
 
 #endif //DUOSCRIPT_MODULEMANAGER_H

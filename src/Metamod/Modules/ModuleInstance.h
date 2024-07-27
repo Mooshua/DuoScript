@@ -10,17 +10,20 @@
 #include "Loop/Loop.h"
 #include "IModule.h"
 #include "ControllerManagerSink.h"
+#include "Core.h"
 
 class ModuleInstance : public virtual IDuoServices
 {
+	DuoCore* _core;
+
 	friend class ModuleManager;
 public:
-	ModuleInstance();
+	ModuleInstance(DuoCore* core);
 	~ModuleInstance();
 
 public:	//	IDuoServices
 	IScriptControllerManager* ScriptController() override { return &controller_manager; };
-	virtual ILoop* Loop() { return &g_Loop; }
+	virtual ILoop* Loop() { return _core->Loop; }
 
 protected:
 	ISmmPlugin* plugin;

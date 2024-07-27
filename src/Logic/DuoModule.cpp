@@ -6,15 +6,11 @@
 #include "Threading/FiberController.h"
 #include "Memory/PointerController.h"
 
-MODULE_INIT(Logic);
+MODULE_INIT(DuoLogicModule);
 
-void Logic::OnReady()
+void DuoLogicModule::OnReady()
 {
-	this->OnScriptReady(g_Duo->ScriptController());
+	Logic = new DuoLogic(_logger, _loop, _files);
+	Logic->OnScriptReady(g_Duo->ScriptController());
 }
 
-void Logic::OnScriptReady(IScriptControllerManager *manager)
-{
-	manager->Register(&g_FiberController);
-	manager->Register(&g_PointerController);
-}

@@ -16,7 +16,7 @@ class PluginManager;
 class Plugin : public virtual IPlugin, public virtual IPluginResources
 {
 public:
-	Plugin(const char* path, PluginManager* parent, int id);
+	Plugin(ScriptVM* vm, const char* path, PluginManager* parent, int id);
 	~Plugin();
 
 	bool TryLoad(char* error, int maxlen);
@@ -31,7 +31,7 @@ public:	//	IPlugin
 
 public:	//	IPluginResources
 	virtual const char* GetName(int* length);
-	virtual bool TryGetResource(const char* name, std::string* results);
+	virtual ResourceType TryGetResource(const char* name, std::string* results);
 	virtual bool TryGetCodeResource(const char* name, std::string* results);
 
 	///	Get a list of resources contained in this plugin

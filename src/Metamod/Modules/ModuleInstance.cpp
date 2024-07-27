@@ -5,10 +5,10 @@
 #include "ModuleInstance.h"
 #include "Script/ScriptVM.h"
 
-ModuleInstance::ModuleInstance()
-	: controller_manager(ControllerManagerSink(g_ScriptVM.controllers))
+ModuleInstance::ModuleInstance(DuoCore* core)
+	: controller_manager(ControllerManagerSink(core->ScriptVM->controllers))
 {
-
+	this->_core = core;
 }
 
 ModuleInstance::~ModuleInstance()

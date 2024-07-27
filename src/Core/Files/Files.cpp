@@ -7,8 +7,6 @@
 #include "Helpers/Path.h"
 #include <IProfiler.h>
 
-Files g_Files;
-
 #define GET_PATH(path) \
 	va_list args; \
 	va_start(args, fmt); \
@@ -35,12 +33,12 @@ bool Files::TryGetChildren(std::vector<std::string> *children, const char *path,
 	return true;
 }
 
-bool Files::TryGetStat(const char *path, uv_statfs_t* stat)
+bool Files::TryGetStat(const char *path, uv_stat_t* stat)
 {
 	uv_fs_t request;
 
 	//	No need to use loop/cb as we're running synchronously
-	int status = uv_fs_statfs(nullptr, &request, path, nullptr);
+	int status = uv_fs_stat(nullptr, &request, path, nullptr);
 
 	if (status != 0 || request.result != 0) {
 		uv_fs_req_cleanup(&request);
@@ -49,7 +47,7 @@ bool Files::TryGetStat(const char *path, uv_statfs_t* stat)
 
 	//	req->ptr is a uv_statfs_t object now.
 	//	copy it to result buffer
-	*stat = * ((uv_statfs_t*) request.ptr);
+	*stat = request.statbuf;
 	uv_fs_req_cleanup(&request);
 
 	return true;
@@ -89,3 +87,30 @@ void Files::GetDirectories(std::vector<std::string> *directories, const char *fm
 
 	this->TryGetChildren(directories, path, UV_DIRENT_DIR);
 }
+
+bool Files::IsFile(const char *fmt, ...)
+{
+	DuoScope(Files::IsFile - Synchronous);
+
+	char path[256];
+	GET_PATH(path);
+
+	uv_stat_t stat;
+	if (!this->TryGetStat(path, &stat))
+		return false;
+
+	return (stat.st_mode & UV_FS_O_DIRECTORY) == 0;
+}
+
+bool Files::IsFolder(const char *fmt, ...)
+{
+	DuoScope(Files::IsFolder - Synchronous);
+
+	char path[256];
+	GET_PATH(path);
+
+	uv_stat_t stat;
+	if (!this->TryGetStat(path, &stat))
+		return false;
+
+	return (stat.st_mode & UV_FS_O_DIRECTORY) == UV_FS_O_DIRECTORY;}

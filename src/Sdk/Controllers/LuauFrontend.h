@@ -5,6 +5,7 @@
 #ifndef DUOSCRIPT_LUAUFRONTEND_H
 #define DUOSCRIPT_LUAUFRONTEND_H
 
+#include <ILogger.h>
 #include <IScriptController.h>
 #include "Luau/FileResolver.h"
 #include "Luau/Config.h"
@@ -50,8 +51,10 @@ public:
 
 class LuauFileResolver : public Luau::FileResolver
 {
+	ILogger* _log;
+
 public:
-	LuauFileResolver(IIsolateHandle* isolate, IScriptMethod* readmethod, IScriptMethod* resolveMethod, IScriptMethod* envmethod);
+	LuauFileResolver(ILogger* log, IIsolateHandle* isolate, IScriptMethod* readmethod, IScriptMethod* resolveMethod, IScriptMethod* envmethod);
 	~LuauFileResolver() override;
 
 public:	//	FileResolver
@@ -69,8 +72,10 @@ protected:
 
 class LuauFrontendController : public IScriptController<LuauFrontend>
 {
+	ILogger* _log;
 public:
-	LuauFrontendController()
+	LuauFrontendController(ILogger* log)
+	: _log(log)
 	{
 		CONTROLLER_NAME(LuauFrontend);
 
@@ -88,6 +93,5 @@ public:
 
 };
 
-extern LuauFrontendController g_LuauFrontend;
 
 #endif //DUOSCRIPT_LUAUFRONTEND_H

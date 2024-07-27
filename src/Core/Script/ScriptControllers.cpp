@@ -6,6 +6,7 @@
 #include "ScriptVM.h"
 #include "ScriptObject.h"
 #include "Logging/Log.h"
+#include "amtl/am-string.h"
 
 ControllerInstance::ControllerInstance(IScriptRef* metatable, IScriptRef* staticMetatable)
 {
@@ -46,10 +47,14 @@ IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* co
 {
 	DuoScope(ScriptControllerManager::Register);
 
-	IScriptRef* namecall = g_ScriptVM.NewMethod(&controller->_namecall, "Controller Namecall");
-	IScriptRef* staticNamecall = g_ScriptVM.NewMethod(&controller->_namecallStatic, "Controller Static Namecall");
-	IScriptRef* index = g_ScriptVM.NewMethod(&controller->_indexer, "Controller Indexer");
-
+	IScriptRef* namecall = _vm->NewMethod(&controller->_namecall,
+												ke::StringPrintf("%s::Namecall", controller->GetName()).c_str());
+	IScriptRef* staticNamecall = _vm->NewMethod(&controller->_namecallStatic,
+													  ke::StringPrintf("%s::StaticNamecall", controller->GetName()).c_str());
+	IScriptRef* index = _vm->NewMethod(&controller->_indexer,
+											 ke::StringPrintf("%s::Indexer", controller->GetName()).c_str());
+	IScriptRef* staticIndex = _vm->NewMethod(&controller->_indexerStatic,
+											 ke::StringPrintf("%s::StaticIndexer", controller->GetName()).c_str());
 	//	=====================================
 	//	Create new userdata for global object
 	lua_newuserdata(L, 0);
@@ -58,6 +63,9 @@ IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* co
 
 			lua_getref(L, staticNamecall->AsReferenceId());
 				lua_rawsetfield(L, -2, "__namecall");
+
+			lua_getref(L, staticIndex->AsReferenceId());
+				lua_rawsetfield(L, -2, "__index");
 
 			//	Don't allow scripts to read the metatable,
 			//	as they can hold on to method refs after their modules
@@ -97,6 +105,7 @@ IControllerInstance* ScriptControllerManager::Register(IBaseScriptController* co
 	delete namecall;
 	delete index;
 	delete staticNamecall;
+	delete staticIndex;
 
 	IControllerInstance* entityTemplate = new ControllerInstance(
 			new ScriptRef(L, metatable),

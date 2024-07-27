@@ -66,6 +66,7 @@ public:
 	virtual IScriptResult* Namecall(IScriptCall* args) = 0;
 	virtual IScriptResult* NamecallStatic(IScriptCall* args) = 0;
 	virtual IScriptResult* Index(IScriptCall* index) = 0;
+	virtual IScriptResult* IndexStatic(IScriptCall* index) = 0;
 
 	virtual void DestroyEntity(void* entity) = 0;
 
@@ -80,6 +81,9 @@ public:
 
 	fastdelegate::FastDelegate<IScriptResult*, IScriptCall*> _indexer
 			= fastdelegate::MakeDelegate(this, &IBaseScriptController::Index);
+
+	fastdelegate::FastDelegate<IScriptResult*, IScriptCall*> _indexerStatic
+		= fastdelegate::MakeDelegate(this, &IBaseScriptController::IndexStatic);
 
 #if 0
 	fastdelegate::FastDelegate<void, void*> _destructor
@@ -238,7 +242,8 @@ protected:
 	///	This can be called at any time, but should ideally only be called at initialization.
 	void AddMethod(const char* name, MethodCallback callback)
 	{
-		_entityCallbacks.add(_entityCallbacks.findForAdd(name), name, callback);
+		auto insert = _entityCallbacks.findForAdd(name);
+		_entityCallbacks.add(insert, name, callback);
 	}
 
 #define CONTROLLER_METHOD(name, method) \
@@ -248,7 +253,8 @@ protected:
 	///	This can only be called at initialization time.
 	void AddStaticMethod(const char* name, StaticMethodCallback callback)
 	{
-		_staticCallbacks.add(_staticCallbacks.findForAdd(name), name, callback);
+		auto insert = _staticCallbacks.findForAdd(name);
+		_staticCallbacks.add(insert, name, callback);
 	}
 
 #define CONTROLLER_STATIC_METHOD(name, method) \
@@ -256,7 +262,8 @@ protected:
 
 	void AddGetter(const char* name, Getter callback)
 	{
-		_entityGet.add(_entityGet.findForAdd(name), name, callback);
+		auto insert = _entityGet.findForAdd(name);
+		_entityGet.add(insert, name, callback);
 	}
 
 #define CONTROLLER_GETTER(name, method) \
@@ -278,6 +285,11 @@ protected:
 
 		Getter get = lookup->value;
 		return get(self, index);
+	}
+
+	IScriptResult* IndexStatic(IScriptCall* index)
+	{
+		return index->Error("Static indexer not supported on controller '%s'", this->GetName());
 	}
 
 	/// Handle a script call on this entity
@@ -312,7 +324,8 @@ protected:
 
 		//	We have a string for this but no atom yet.
 		//	Let's patch the atom in now:
-		_fastEntityCallbacks.add(_fastEntityCallbacks.findForAdd(atom), atom, lookup->value);
+		auto insert = _fastEntityCallbacks.findForAdd(atom);
+		_fastEntityCallbacks.add(insert, atom, lookup->value);
 
 		return lookup->value(self, namecall);
 	}

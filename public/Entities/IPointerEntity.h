@@ -11,7 +11,7 @@
 ///	so that modders can get a pointer to the underlying object.
 class IPointerEntity
 {
-	void* AsPointer();
+	virtual void* AsPointer() = 0;
 };
 
 #endif //DUOSCRIPT_IPOINTERENTITY_H

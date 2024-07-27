@@ -14,7 +14,7 @@ class ScriptFiber;
 class IsolateHandle : public virtual IIsolateHandle
 {
 public:
-	IsolateHandle(int id);
+	IsolateHandle(ScriptVM *vm, int id);
 	virtual ~IsolateHandle() = default;
 
 	///	Determine if the object we are pointing to still exists
@@ -25,13 +25,17 @@ public:
 	virtual IScriptIsolate* Get();
 
 protected:
+	ScriptVM* vm;
 	int isolate_id;
 };
 
 class FiberHandle : public virtual IFiberHandle
 {
+public:	//	IFiberContinuation
+	virtual void Continue(IScriptReturn* with);
+
 public:
-	FiberHandle(IsolateHandle* parent, int id);
+	FiberHandle(ScriptVM* vm, IsolateHandle* parent, int id);
 	virtual ~FiberHandle();
 
 	///	Determine if the object we are pointing to still exists
@@ -43,6 +47,7 @@ public:
 
 
 protected:
+	ScriptVM* vm;
 	IsolateHandle* isolate;
 	int fiber_id;
 };

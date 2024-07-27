@@ -3,9 +3,6 @@
 // accessible by any user able to connect to a server running this program.
 
 #include "ZipController.h"
-#include "LogicGlobals.h"
-
-ZipController g_ZipController;
 
 void ZipOpenTask::Execute()
 {
@@ -58,7 +55,7 @@ IScriptResult *ZipController::Open(IScriptCall *call)
 	if (!call->ArgBool(2, &read))
 		return call->Error("Expected argument 2 to be a boolean! (read)");
 
-	g_DuoLoop->NewTask(new ZipOpenTask(this, call->GetFiber(), path, read ? 'r' : 'w'));
+	_loop->NewTask(new ZipOpenTask(this, call->GetFiber(), path, read ? 'r' : 'w'));
 	return call->Await();
 }
 

@@ -6,7 +6,7 @@
 #define DUOSCRIPT_FIBERCONTROLLER_H
 
 #include <IScriptController.h>
-#include "LogicGlobals.h"
+#include <ILogger.h>
 
 class FiberEntity
 {
@@ -23,12 +23,14 @@ public:
 
 class ThreadResumer
 {
+	ILoop* _loop;
 public:
-	ThreadResumer(IFiberHandle* handle, uint64_t delay)
+	ThreadResumer(ILoop* loop, IFiberHandle* handle, uint64_t delay)
 	{
+		_loop = loop;
 		_handle = handle;
 
-		IDelayHandle* delayer = g_DuoLoop->NewDelay( fastdelegate::MakeDelegate(this, &ThreadResumer::OnResume) );
+		IDelayHandle* delayer = _loop->NewDelay( fastdelegate::MakeDelegate(this, &ThreadResumer::OnResume) );
 		delayer->TryDelay(delay);
 	}
 
@@ -51,8 +53,12 @@ public:
 
 class FiberController : public IScriptController<FiberEntity>
 {
+	ILogger* _log;
+	ILoop* _loop;
 public:
-	FiberController()
+	FiberController(ILogger* log, ILoop* loop)
+	: _log(log)
+	, _loop(loop)
 	{
 		CONTROLLER_NAME(Fiber);
 
@@ -73,8 +79,6 @@ public:
 	IScriptResult* Resume(FiberEntity* entity, IScriptCall* args);
 	IScriptResult* Depend(FiberEntity* entity, IScriptCall* args);
 };
-
-extern FiberController g_FiberController;
 
 
 #endif //DUOSCRIPT_FIBERCONTROLLER_H

@@ -9,8 +9,10 @@
 
 #include <IScriptController.h>
 #include <IScript.h>
+#include <IFiles.h>
 
 #include "mimalloc.h"
+#include "ILogger.h"
 
 class FileController;
 class FileEntity;
@@ -20,8 +22,9 @@ class FileEntity;
 class FileRequest
 {
 public:
-	FileRequest(IFiberHandle* fiber, bool copy_back)
+	FileRequest(ILogger* logger, IFiberHandle* fiber, bool copy_back)
 	{
+		this->_logger = logger;
 		this->fiber = fiber;
 		this->request.data = this;
 		this->buffer.base = nullptr;
@@ -38,6 +41,8 @@ public:
 
 	static void Callback(uv_fs_t *req);
 public:
+	ILogger* _logger;
+
 	///	The libuv request type
 	uv_fs_t request;
 
@@ -54,8 +59,9 @@ public:
 class FileStatRequest
 {
 public:
-	FileStatRequest(IFiberHandle* fiber)
+	FileStatRequest(ILogger* logger, IFiberHandle* fiber)
 	{
+		this->_logger = logger;
 		this->request.data = this;
 		this->fiber = fiber;
 	}
@@ -67,6 +73,8 @@ public:
 	}
 	static void Callback(uv_fs_t *req);
 public:
+	ILogger* _logger;
+
 	uv_fs_t request;
 
 	IFiberHandle* fiber;
@@ -75,8 +83,9 @@ public:
 class FileOpenRequest
 {
 public:
-	FileOpenRequest(IFiberHandle* callback, FileController* controller)
+	FileOpenRequest(ILogger* logger, IFiberHandle* callback, FileController* controller)
 	{
+		this->_logger = logger;
 		this->request.data = this;
 		this->fiber = callback;
 		this->controller = controller;
@@ -90,6 +99,8 @@ public:
 
 	static void Callback(uv_fs_t *req);
 public:
+	ILogger* _logger;
+
 	uv_fs_t request;
 
 	IFiberHandle* fiber;
@@ -114,9 +125,17 @@ public:
 class FileController : public virtual IScriptController<FileEntity>
 {
 	friend class FileOpenRequest;
+
+	ILoop* _loop;
+	ILogger* _logger;
+	IFiles* _files;
 public:
-	FileController()
+	FileController(ILogger* logger, ILoop* loop, IFiles* files)
 	{
+		this->_logger = logger;
+		this->_loop = loop;
+		this->_files = files;
+
 		CONTROLLER_NAME(File);
 		CONTROLLER_STATIC_METHOD(Open, &FileController::Open);
 
@@ -138,7 +157,5 @@ public:
 	IScriptResult* Length(FileEntity* file, IScriptCall* call);
 
 };
-
-extern FileController g_FileController;
 
 #endif //DUOSCRIPT_FILESYSTEMCONTROLLER_H

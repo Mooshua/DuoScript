@@ -13,16 +13,16 @@ Plugin::~Plugin()
 	zip_stream_close(this->_file);
 }
 
-Plugin::Plugin(const char *path, PluginManager* parent, int id)
+Plugin::Plugin(ScriptVM *vm, const char *path, PluginManager* parent, int id)
 {
 	this->_path = path;
-	this->_name = this->_path.substr(this->_path.find_last_of("/\\"));
+	this->_name = this->_path.substr(this->_path.find_last_of("/\\") + 1);
 
 	this->_parent = parent;
 	this->_id = id;
 
 	this->_file = zip_open(path, 0, 'r');
-	this->_isolate = g_ScriptVM.CreateIsolateInternal(this);
+	this->_isolate = vm->CreateIsolateInternal(this);
 
 	this->_loaded = false;
 	this->_entryMethod = nullptr;
@@ -30,7 +30,7 @@ Plugin::Plugin(const char *path, PluginManager* parent, int id)
 
 bool Plugin::TryGetCodeResource(const char *name, std::string *results)
 {
-	if (!this->TryGetResource(name, results))
+	if (this->TryGetResource(name, results) != ResourceType::File)
 		return false;
 
 	//	Okay, now we have our program in results*.
@@ -64,7 +64,7 @@ bool Plugin::TryLoad(char *error, int maxlen)
 
 	//	Load the script into the isolate
 	IScriptMethod* method;
-	if (!this->_isolate->TryLoad("Plugin", contents, &method, error, maxlen))
+	if (!this->_isolate->TryLoad("index.luau", contents, &method, error, maxlen))
 		return false;
 
 	//	"Method" is used to boot the plugin, so to speak.
@@ -73,26 +73,34 @@ bool Plugin::TryLoad(char *error, int maxlen)
 	return true;
 }
 
-bool Plugin::TryGetResource(const char *name, std::string *results)
+IIsolateResources::ResourceType Plugin::TryGetResource(const char *name, std::string *results)
 {
-	int open = zip_entry_open(this->_file, name);
+	DuoScope(Plugin::TryGetResource);
+
+	int open = zip_entry_opencasesensitive(this->_file, name);
 	if (open != 0)
 	{
 		//	Failure getting file. Write error to results
 		*results = std::string(zip_strerror(open));
-		return false;
+		return ResourceType::Nonexistant;
 	}
+
+	if (zip_entry_isdir(this->_file))
 	{
-		size_t size = zip_entry_size(this->_file);
-		*results = std::string(size + 1, '\0');
-
-		//	This only fails when this->_file is uninitialized/closed
-		//	or when we're out of memory. So we don't care about the return :)
-		zip_entry_noallocread(this->_file, results->data(), size);
+		zip_entry_close(this->_file);
+		return ResourceType::Directory;
 	}
-	zip_entry_close(this->_file);
 
-	return true;
+	size_t size = zip_entry_size(this->_file);
+	*results = std::string(size + 2, '\0');
+
+	//	This only fails when this->_file is uninitialized/closed
+	//	or when we're out of memory. So we don't care about the return :)
+	zip_entry_noallocread(this->_file, results->data(), size);
+
+
+	zip_entry_close(this->_file);
+	return ResourceType::File;
 }
 
 void Plugin::GetResources(std::vector<const char *> *names, const char *search)

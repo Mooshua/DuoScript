@@ -7,8 +7,6 @@
 #include "Logging/Log.h"
 #include "Files/Files.h"
 
-PluginManager g_PluginManager;
-
 PluginLoadResult *PluginManager::LoadPluginInternal(const char *name, const char *path)
 {
 	char error[512];
@@ -18,7 +16,7 @@ PluginLoadResult *PluginManager::LoadPluginInternal(const char *name, const char
 
 	result->name = std::string(name);
 
-	Plugin* plugin = new Plugin(path, this, this->_plugins.size() - 1 /* index of our PluginLoadResult* */);
+	Plugin* plugin = new Plugin(_vm, path, this, this->_plugins.size() - 1 /* index of our PluginLoadResult* */);
 
 
 	if (!plugin->TryLoad(error, sizeof(error)))
@@ -28,7 +26,7 @@ PluginLoadResult *PluginManager::LoadPluginInternal(const char *name, const char
 		result->error = std::string(error);
 		result->plugin = nullptr;
 
-		g_Log.Message("PluginSys", Log::SEV_WARN, "Error loading plugin %s: %s", result->name.c_str(), result->error.c_str());
+		_log->Message("PluginSys", Log::SEV_WARN, "Error loading plugin %s: %s", result->name.c_str(), result->error.c_str());
 
 		return result;
 	}
@@ -37,7 +35,7 @@ PluginLoadResult *PluginManager::LoadPluginInternal(const char *name, const char
 	result->error = std::string ();
 	result->plugin = plugin;
 
-	g_Log.Message("PluginSys", Log::SEV_INFO, "Loaded plugin %s", result->name.c_str());
+	_log->Message("PluginSys", Log::SEV_INFO, "Loaded plugin %s", result->name.c_str());
 
 	return result;
 }
@@ -77,7 +75,7 @@ PluginLoadResult *PluginManager::FindPlugin(const char *name)
 void PluginManager::LoadAllPlugins()
 {
 	std::vector<std::string> plugin_files = std::vector<std::string>();
-	g_Files.GetFiles(&plugin_files, "plugins");
+	_files->GetFiles(&plugin_files, "plugins");
 
 	for (const std::string &item: plugin_files)
 	{
@@ -90,13 +88,13 @@ void PluginManager::LoadAllPlugins()
 
 		if (!plugin->success)
 		{
-			g_Log.Message("PluginSys", Log::SEV_WARN, "Error loading plugin %s!", item.c_str());
-			g_Log.Message("PluginSys", Log::SEV_WARN, "%s: %s", item.c_str(), plugin->error.c_str());
+			_log->Message("PluginSys", Log::SEV_WARN, "Error loading plugin %s!", item.c_str());
+			_log->Message("PluginSys", Log::SEV_WARN, "%s: %s", item.c_str(), plugin->error.c_str());
 			continue;
 		}
 
 		plugin->plugin->Start();
-		g_Log.Message("PluginSys", Log::SEV_DEBUG, "Loaded plugin %s", item.c_str());
+		_log->Message("PluginSys", Log::SEV_DEBUG, "Loaded plugin %s", item.c_str());
 
 	}
 }

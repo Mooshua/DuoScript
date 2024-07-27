@@ -7,6 +7,7 @@
 
 class ScriptFiber;
 
+#include <ILogger.h>
 #include "ScriptVM.h"
 #include "ScriptCall.h"
 
@@ -35,7 +36,7 @@ public:
 	///	Invoke this isolate
 	virtual IScriptReturn* Call(bool use);
 
-	virtual bool TryDepend(IFiberHandle *other);
+	virtual bool TryDepend(IFiberContinuation *other);
 
 protected:
 	///	Report an error and unwind the stack
@@ -47,12 +48,15 @@ public:
 	lua_State *L;
 
 protected:
+	ILogger* _logger;
+
+protected:
 	bool first_invoke;
 	IScriptRef* thread_reference;
 	//	Unique ID assigned to us by the isolate
 	int fiber_id;
 
-	std::vector<IFiberHandle*> _dependants;
+	std::vector<IFiberContinuation*> _dependants;
 };
 
 

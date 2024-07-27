@@ -17,7 +17,7 @@ public:	// IIsolateResources
 	///	Get the resource file with the specified name
 	///	Writes an error string when returning false.
 	///	You own the returned buffer--make sure to free it!
-	virtual bool TryGetResource(const char* name, std::string* results) = 0;
+	virtual ResourceType TryGetResource(const char* name, std::string* results) = 0;
 
 	virtual bool TryGetCodeResource(const char *name, std::string *results) = 0;
 
