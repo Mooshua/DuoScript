@@ -154,7 +154,6 @@ private:
 	Entity _entity;
 };
 
-
 ///	A script controller handles requests for
 ///	entities in the script world. Entities hold the state,
 ///	while controllers process requests for the entity.
@@ -173,6 +172,7 @@ public:
 
 	///	The type that will be instantiated in the script VM
 	typedef IScriptControllerEntity<Entity> Userdata;
+	typedef Entity ControllerEntity;
 
 	IScriptController()
 	{
@@ -268,6 +268,9 @@ protected:
 
 #define CONTROLLER_GETTER(name, method) \
 	this->AddGetter(#name, fastdelegate::MakeDelegate(this, method) )
+
+#define CONTROLLER_AUTO_GETTER(name, type, memberptr) \
+	this->AddGetter(#name, &controller_getter<type, ControllerEntity, memberptr>);
 
 	IScriptResult* Index(IScriptCall* index)
 	{
@@ -372,5 +375,13 @@ public:
 
 	virtual void Destroy(IControllerInstance* instance) = 0;
 };
+
+
+template<typename Type, typename Entity, Type Entity::* Pointer>
+IScriptResult* controller_getter(Entity* entity, IScriptCall* call)
+{
+	script_push(call, entity->*Pointer);
+	return call->Return();
+}
 
 #endif //DUOSCRIPT_ISCRIPTCONTROLLER_H

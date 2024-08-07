@@ -115,7 +115,7 @@ bool ScriptIsolate::TryLoad(const char *name, std::string data, IScriptMethod **
 	return false;
 }
 
-IScriptFiber *ScriptIsolate::NewFiber()
+ScriptFiber *ScriptIsolate::NewFiberInternal()
 {
 	DuoScope(ScriptIsolate::NewFiber);
 
@@ -131,6 +131,11 @@ IScriptFiber *ScriptIsolate::NewFiber()
 	fiber->fiber_id = _fibers.size() - 1;
 
 	return fiber;
+}
+
+IScriptFiber *ScriptIsolate::NewFiber()
+{
+	return this->NewFiberInternal();
 }
 
 ScriptFiber *ScriptIsolate::GetFiber(int id)
@@ -154,6 +159,7 @@ IIsolateResources *ScriptIsolate::GetResources()
 {
 	return this->_resources;
 }
+
 
 void *ScriptVM::Alloc(void *userdata, void *pointer, size_t oldsize, size_t newsize)
 {

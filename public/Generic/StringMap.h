@@ -15,30 +15,35 @@
 namespace ke
 {
 
-	static size_t Hash(const char *string)
+	static constexpr size_t Hash(std::string_view string)
 	{
 		XXHash64 hash = XXHash64(0b10101010);
-		hash.add(string, strlen(string));
+		hash.add(string.data(), string.size());
 		return hash.hash();
 	}
 
-	static bool Equals(const char *a, const char *b)
-	{
-		return strcmp(a, b) == 0;
-	}
 
 	class StringKey
 	{
 	public:
-		StringKey(const char *str)
-		: _str(str)
-		//, _hash(Hash(str))
+		constexpr StringKey(const char *str)
 		{
+			if (str != nullptr)
+				_str = std::string_view(str);
+		}
 
+		constexpr StringKey(const std::string_view str)
+				: _str(str)
+		{
 		}
 	public:
-		inline operator const char*() { return _str; }
-		inline bool operator==(const StringKey other) const { return strcmp(_str, other._str) == 0; }
+		inline operator const char*() { return _str.data(); }
+		inline bool operator==(const StringKey other) const {
+			if (_str.length() != other._str.length())
+				return false;
+
+			return _str.compare(other._str) == 0;
+		}
 
 		size_t hash() {
 			if (_hash == -1)
@@ -51,7 +56,7 @@ namespace ke
 		}
 
 	protected:
-		const char* _str;
+		std::string_view _str;
 		size_t _hash = -1;
 	};
 
@@ -62,7 +67,7 @@ namespace ke
 			//if (lookup.hash() != key.hash())
 			//	return false;
 
-			return Equals(lookup, key);
+			return lookup == key;
 		}
 		static inline uint32_t hash(StringKey key) {
 			return key.hash();

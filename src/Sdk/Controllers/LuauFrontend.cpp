@@ -206,6 +206,7 @@ IScriptResult *LuauFrontendController::Check(LuauFrontend *entity, IScriptCall *
 
 	Luau::CheckResult result = entity->frontend->check(name);
 	LuauCheckResult resultEntity;
+	resultEntity.name = name;
 	resultEntity.result = result;
 
 	return g_LuauCheckResult.ReturnNew(call, &resultEntity);

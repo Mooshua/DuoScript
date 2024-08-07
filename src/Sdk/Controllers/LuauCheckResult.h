@@ -12,6 +12,7 @@ class LuauCheckResult
 {
 public:
 	Luau::CheckResult result;
+	std::string name;
 };
 
 class LuauCheckResultController : public IScriptController<LuauCheckResult>
@@ -22,6 +23,7 @@ public:
 	{
 		CONTROLLER_NAME(LuauCheckResult);
 
+		CONTROLLER_AUTO_GETTER(Name, std::string, &LuauCheckResult::name);
 		CONTROLLER_GETTER(ErrorCount, &LuauCheckResultController::GetErrorCount);
 		CONTROLLER_METHOD(GetError, &LuauCheckResultController::GetError);
 	}

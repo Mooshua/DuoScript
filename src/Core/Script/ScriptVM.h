@@ -102,6 +102,7 @@ public:
 
 	IIsolateResources* GetResources() override;
 
+	ScriptFiber* NewFiberInternal();
 	IScriptFiber* NewFiber() final;
 
 	ScriptFiber* GetFiber(int id);

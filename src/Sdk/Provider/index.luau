@@ -16,19 +16,13 @@ local _, FileTree = require "Tree.FileTree"
 function FileResolver(path: string)
     Log:Debug(path, "FileResolver")
 
-    if path == "mod" then
-        return [[if b < 0 then local a = b + 1 print(a, b) end return true]]
+    local success, result, environment = FileTree:Query(path);
+
+    if not success then
+        Log:Error("Failed to fetch file " .. path, "FileResolver");
     end
 
-    return [[
-
-    local a = require "mod"
-
-    if type(v) == "String" then
-        print("v is a string")
-    end
-
-    ]]
+    return buffer.tostring(result.contents);
 end
 
 function ModuleResolver(name: any)
@@ -51,12 +45,18 @@ end
 
 local frontend = LuauFrontend:New(FileResolver, ModuleResolver, EnvironmentResolver);
 
---local results = frontend:Check("hi")
---[[
+local results = frontend:Check("index")
+print ("NAME", results.Name)
+
 for i = 1, results.ErrorCount do
-    local code, error, module, location = results:GetError(i);
-    Log:Error(code .. ": " .. error, module .. " " .. location)
-end]]
+    local code, err, module, location = results:GetError(i);
+    print(i, code, module, location )
+    Log:Error(code .. ": " .. err, module .. " " .. location)
+end
+
+Log:Error(true, {});
+
+print("Done")
 
 local s, f, e = FileTree:Query("index");
 print(s,f, e[#e]);

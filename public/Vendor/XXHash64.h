@@ -34,21 +34,19 @@ class XXHash64
 public:
 	/// create new XXHash (64 bit)
 	/** @param seed your seed value, even zero is a valid seed **/
-	explicit XXHash64(uint64_t seed)
+	constexpr explicit XXHash64(uint64_t seed)
+	: state {seed + Prime1 + Prime2, seed + Prime2, seed, seed - Prime1}
+	, bufferSize(0)
+	, totalLength(0)
+	, buffer()
 	{
-		state[0] = seed + Prime1 + Prime2;
-		state[1] = seed + Prime2;
-		state[2] = seed;
-		state[3] = seed - Prime1;
-		bufferSize  = 0;
-		totalLength = 0;
 	}
 
 	/// add a chunk of bytes
 	/** @param  input  pointer to a continuous block of data
 		@param  length number of bytes
 		@return false if parameters are invalid / zero **/
-	bool add(const void* input, uint64_t length)
+	constexpr bool add(const void* input, uint64_t length)
 	{
 		// no data ?
 		if (!input || length == 0)
@@ -105,10 +103,10 @@ public:
 
 	/// get current hash
 	/** @return 64 bit XXHash **/
-	uint64_t hash() const
+	constexpr uint64_t hash() const
 	{
 		// fold 256 bit state into one single 64 bit value
-		uint64_t result;
+		uint64_t result = 0;
 		if (totalLength >= MaxBufferSize)
 		{
 			result = rotateLeft(state[0],  1) +
@@ -163,7 +161,7 @@ public:
 		@param  length number of bytes
 		@param  seed your seed value, e.g. zero is a valid seed
 		@return 64 bit XXHash **/
-	static uint64_t hash(const void* input, uint64_t length, uint64_t seed)
+	constexpr static uint64_t hash(const void* input, uint64_t length, uint64_t seed)
 	{
 		XXHash64 hasher(seed);
 		hasher.add(input, length);
@@ -187,19 +185,19 @@ private:
 	uint64_t      totalLength;
 
 	/// rotate bits, should compile to a single CPU instruction (ROL)
-	static inline uint64_t rotateLeft(uint64_t x, unsigned char bits)
+	constexpr static inline uint64_t rotateLeft(uint64_t x, unsigned char bits)
 	{
 		return (x << bits) | (x >> (64 - bits));
 	}
 
 	/// process a single 64 bit value
-	static inline uint64_t processSingle(uint64_t previous, uint64_t input)
+	constexpr static inline uint64_t processSingle(uint64_t previous, uint64_t input)
 	{
 		return rotateLeft(previous + input * Prime2, 31) * Prime1;
 	}
 
 	/// process a block of 4x4 bytes, this is the main part of the XXHash32 algorithm
-	static inline void process(const void* data, uint64_t& state0, uint64_t& state1, uint64_t& state2, uint64_t& state3)
+	constexpr static inline void process(const void* data, uint64_t& state0, uint64_t& state1, uint64_t& state2, uint64_t& state3)
 	{
 		const uint64_t* block = (const uint64_t*) data;
 		state0 = processSingle(state0, block[0]);

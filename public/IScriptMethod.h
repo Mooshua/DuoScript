@@ -137,6 +137,32 @@ public:
 	virtual void PushBuffer(void* data, size_t length) = 0;
 };
 
+///	@brief Push the provided value to the scriptcall
+template<typename Type>
+void script_push(IScriptCall* call, Type &&value)
+{
+	if constexpr ( std::is_arithmetic_v<Type> )
+	{
+		if constexpr (std::is_floating_point_v<Type>)
+			return call->PushNumber(value);
+		if (std::is_unsigned_v<Type>)
+			return call->PushUnsigned(value);
+
+		return call->PushInt(value);
+	}
+
+	if constexpr ( std::is_same_v<Type, bool> )
+		return call->PushBool(value);
+
+	if constexpr (std::is_convertible_v<Type, const char*>)
+		return call->PushString(value);
+
+	if constexpr (std::is_convertible_v<Type, std::string>)
+		return call->PushString((std::string(value)).c_str(), (std::string(value)).size());
+
+	abort();
+}
+
 ///	Arguments passed to native code from lua
 class IScriptCall : public IScriptInvoke, public IScriptRead
 {
